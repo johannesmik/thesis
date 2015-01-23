@@ -7,11 +7,12 @@ attribute vec3 normal;
 uniform mat4 transform;
 
 varying vec4 normal0;
-
 varying vec4 basecolor;
 
 void main() {
+    // Pass to fragment shader
     basecolor = clamp(vec4(color, 1), 0, 1);
-    normal0 = vec4(normal, 0);
+    normal0 = vec4(normalize(normal), 0);
+
     gl_Position = transform * vec4(position, 1);
 }

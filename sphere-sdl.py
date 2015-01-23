@@ -2,9 +2,7 @@
 # Renders a simple sphere
 # Author: Johannes
 
-import OpenGL
 from OpenGL.GL import *
-# from OpenGL.GLUT import *
 from sdl2 import *
 from OpenGL.GL import shaders
 from OpenGL.arrays import vbo
@@ -15,108 +13,40 @@ import time
 import math
 import ctypes
 
-def normalized(array, axis=1):
-    n = np.linalg.norm(array, axis=1)
-    n[n==0] = 1
-    return  array / np.expand_dims(n, 1)
+import meshes
 
-class Mesh:
-    """ Base class for all meshes. """
+class Shader:
+    def __init__(self, vertexshader, fragmentshader, attributes, uniforms):
+        """
+         Initialize the Shader and get locations for the GLSL variables
+        """
+        with open(vertexshader) as f:
+            vertex = shaders.compileShader(f.read(), GL_VERTEX_SHADER)
+        with open(fragmentshader) as f:
+            fragment = shaders.compileShader(f.read(), GL_FRAGMENT_SHADER)
+        self.program = shaders.compileProgram(vertex, fragment)
 
-    def draw(self, locations):
-        stride = 12  # 3 * 4 bits stride
+        self.attribute_locations = {}
+        for attribute in attributes:
+            location = glGetAttribLocation(self.program, attribute)
+            if location == None:
+                raise Exception("Could not get location of attribute %s" % attribute)
+            elif location == -1:
+                print "Attribute %s is not used in the shader" % attribute
+            self.attribute_locations[attribute] = location
 
-        try:
-            glEnableVertexAttribArray(locations['position'])
-            glEnableVertexAttribArray(locations['color'])
-            glEnableVertexAttribArray(locations['normal'])
+        self.uniform_locations = {}
+        for uniform in uniforms:
+            location = glGetUniformLocation(self.program, uniform)
+            if location == None:
+                raise Exception("Could not get location of uniform %s" % uniform)
+            elif location == -1:
+                print "Uniform %s is not used in the shader." % uniform
+            self.uniform_locations[uniform] = location
 
-            self.vertices.bind()
-            glVertexAttribPointer(locations['position'], 3, GL_FLOAT, False, stride, self.vertices)
-
-            self.colors.bind()
-            glVertexAttribPointer(locations['color'], 3, GL_FLOAT, False, stride, self.colors)
-
-            self.normals.bind()
-            glVertexAttribPointer(locations['normal'], 3, GL_FLOAT, False, stride, self.normals)
-
-            glDrawElements(GL_TRIANGLES, len(self.indices), GL_UNSIGNED_SHORT, self.indices)
-
-        finally:
-            self.vertices.unbind()
-            self.colors.unbind()
-            self.normals.unbind()
-            glDisableVertexAttribArray(locations['position'])
-            glDisableVertexAttribArray(locations['color'])
-            glDisableVertexAttribArray(locations['normal'])
-
-        return 0
-
-class Triangle(Mesh):
-    """ Create a small triangle """
-    def __init__(self):
-        self.vertices = vbo.VBO(np.array([[0., 1., 0], [-1., -1., 0], [1., -1., 0]], 'float32'),
-                                usage=GL_STATIC_DRAW)
-
-        self.colors = vbo.VBO(np.array([[1, 0, 1], [1, 0, 1], [1, 0, 1]], 'float32'),
-                              usage=GL_STATIC_DRAW)
-
-        self.normals = vbo.VBO(np.array([[0, 0, 1], [0, 0, 1], [0, 0, 1]], 'float32'),
-                               usage=GL_STATIC_DRAW)
-
-        self.indices = [0, 1, 2]
-
-class Icosphere(Mesh):
-    """ Create a mesh for an Icosphere """
-
-    def __init__(self, subdivisions=3, color=None):
-
-        t = (1 + math.sqrt(5.0)) / 2.0
-
-        self.color = color if color != None else np.array([1, 1, 1])
-
-        vertices = np.array([[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
-                            [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
-                            [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]], 'float32')
-
-        vertices = normalized(vertices)
-
-        colors = np.array([self.color]*12, 'float32')
-
-        normals = np.array([[-1, t, 0], [1., t, 0], [-1, -t, 0], [1, -t, 0],
-                           [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
-                           [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]], 'float32')
-
-        indices = [0, 11, 5,   0, 5, 1,   0, 1, 7,   0, 7, 10,   0, 10, 11,   1, 5, 9,   5, 11, 4,   11, 10, 2,
-                   10, 7, 6,   7, 1, 8,   3, 9, 4,   3, 4, 2,    3, 2, 6,   3, 6, 8,   3, 8, 9,   4, 9, 5,
-                   2, 4, 11,   6, 2, 10,  8, 6, 7,   9, 8, 1]
-
-        # Subdivide
-        next_index = 12
-        for i in range(subdivisions):
-            new_indices = []
-            for j in range(0, len(indices), 3):
-                # Create three new vertices
-                tmp1 = (vertices[indices[j],:] + vertices[indices[j+1],:])
-                tmp2 = (vertices[indices[j+1],:] + vertices[indices[j+2],:])
-                tmp3 = (vertices[indices[j+2],:] + vertices[indices[j],:])
-                vertices = np.append(vertices, normalized(np.array([tmp1, tmp2, tmp3], 'float32')), axis=0)
-                colors = np.append(colors, np.array([self.color]*3, 'float32'), axis=0)
-                normals = np.append(normals, np.array([tmp1, tmp2, tmp3],  'float32'), axis=0)
-
-                # Add 4 new faces
-                new_indices.extend([indices[j], next_index, next_index+2])
-                new_indices.extend([next_index, next_index + 1, next_index + 2])
-                new_indices.extend([next_index, indices[j+1], next_index + 1])
-                new_indices.extend([next_index + 1, indices[j+2], next_index + 2])
-                next_index += 3
-            indices = new_indices
-
-        self.vertices = vbo.VBO(vertices, usage=GL_STATIC_DRAW)
-        self.colors = vbo.VBO(colors, usage=GL_STATIC_DRAW)
-        self.normals = vbo.VBO(normals, usage=GL_STATIC_DRAW)
-        self.indices = indices
-
+        self.locations = {}
+        self.locations.update(self.attribute_locations)
+        self.locations.update(self.uniform_locations)
 
 class Camera:
 
@@ -171,20 +101,34 @@ class Camera:
 class Context:
     def __init__(self, width, height):
         self.window = SDL_CreateWindow("OpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                       width, height, SDL_WINDOW_OPENGL)
+                                       width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE)
         SDL_GL_CreateContext(self.window)
         self.width = width
         self.height = height
 
-        self.init_shader()
+        self.color_shader_simple = Shader('vertex-shader-simple.glsl', 'fragment-shader-simple.glsl',
+                             ['position', 'color', 'normal'],
+                             ['VPMatrix', 'light_direction'])
+        self.color_shader = Shader('vertex-shader-advanced.glsl', 'fragment-shader-advanced.glsl',
+                         ['position', 'color', 'normal', 'texcoords'],
+                         ['VPMatrix', 'MMatrix', 'light_direction', 'light_position', 'half_angle'])
+        # For depth rendering
+        self.depth_shader = Shader('vertex-shader-advanced.glsl', 'fragment-shader-depth.glsl',
+                         ['position', 'color', 'normal', 'texcoords'],
+                         ['VPMatrix', 'MMatrix'])
+
+        # For normal shading
+        self.normal_shader = Shader('vertex-shader-advanced.glsl', 'fragment-shader-normal.glsl',
+                         ['position', 'color', 'normal', 'texcoords'],
+                         ['VPMatrix', 'MMatrix'])
         self.init_framerate()
         self.init_frustum()
 
         self.meshes = []
-        self.camera = Camera(position=np.array([0, 0, 10.0]))
+        self.camera = Camera(position=np.array([0, 0, 2.0]))
         self.lighting_direction = 0
 
-        glClearColor(0.6, 0.6, 0.7, 1.0)
+        self.current_draw_method = self.draw
 
     def addmesh(self, mesh):
         self.meshes.append(mesh)
@@ -193,53 +137,69 @@ class Context:
         self.tStart = self.t0 = time.time()
         self.frames = 0
 
-    def init_shader(self):
-
-        with open("vertex-shader.glsl") as f:
-            vertex = shaders.compileShader(f.read(), GL_VERTEX_SHADER)
-        with open("fragment-shader.glsl") as f:
-            fragment = shaders.compileShader(f.read(), GL_FRAGMENT_SHADER)
-        self.shader = shaders.compileProgram(vertex, fragment)
-
-        self.attributes = ['position', 'color', 'normal']
-        self.attribute_locations = {}
-        for attribute in self.attributes:
-            location = glGetAttribLocation(self.shader, attribute)
-            if location in (None, -1):
-                raise Exception("Could not get location of attribute %s" % attribute)
-            self.attribute_locations[attribute] = location
-
-        self.uniforms = ['transform', 'light_direction']
-        self.uniform_locations = {}
-        for uniform in self.uniforms:
-            location = glGetUniformLocation(self.shader, uniform)
-            if location in (None, -1):
-                raise Exception("Could not get location of uniform %s" % uniform)
-            self.uniform_locations[uniform] = location
-
-        self.locations = {}
-        self.locations.update(self.attribute_locations)
-        self.locations.update(self.uniform_locations)
-
     def init_frustum(self):
-        self.near, self.far = 1.0, 20.0
+        self.near, self.far = 1.0, 20
         self.left, self.right = -1.0, 1.0
         self.top, self.bottom = 1.0, -1.0
 
     def draw(self):
+        glClearColor(0.6, 0.6, 0.7, 1.0)
         self.framerate()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        shaders.glUseProgram(self.shader)
+        shaders.glUseProgram(self.color_shader.program)
 
         # put up uniforms
-        transform = np.dot(self.get_ProjectionMatrix(), self.camera.viewmatrix)
-        glUniformMatrix4fv(self.locations['transform'], 1, GL_TRUE, transform)
-        glUniform3f(self.locations['light_direction'], math.sin(self.lighting_direction) *5, 0, -1)
+        transform = np.dot(self.projectionmatrix, self.camera.viewmatrix)
+        glUniformMatrix4fv(self.color_shader.locations['VPMatrix'], 1, GL_TRUE, transform)
+        glUniform4f(self.color_shader.locations['light_direction'], math.sin(self.lighting_direction), -1, -1, 1)
+        glUniformMatrix4fv(self.color_shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
 
         # Draw the meshes
         for mesh in self.meshes:
-            mesh.draw(self.locations)
+            mesh.draw(self.color_shader.locations)
+
+        shaders.glUseProgram(0)
+        SDL_GL_SwapWindow(self.window)
+
+    def draw_depth(self):
+
+        # Drawing the depth map
+        glClearColor(0.0, 0.0, 0.0, 1.0)
+        self.framerate()
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        shaders.glUseProgram(self.depth_shader.program)
+
+        # put up uniforms
+        transform = np.dot(self.projectionmatrix, self.camera.viewmatrix)
+        glUniformMatrix4fv(self.depth_shader.locations['VPMatrix'], 1, GL_TRUE, transform)
+        glUniformMatrix4fv(self.depth_shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
+
+        # Draw the meshes
+        for mesh in self.meshes:
+            mesh.draw(self.depth_shader.locations)
+
+        shaders.glUseProgram(0)
+        SDL_GL_SwapWindow(self.window)
+
+    def draw_normal(self):
+
+        # Drawing the normal map
+        glClearColor(0.0, 0.5, 0.7, 1.0)
+        self.framerate()
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        shaders.glUseProgram(self.normal_shader.program)
+
+        # put up uniforms
+        transform = np.dot(self.projectionmatrix, self.camera.viewmatrix)
+        glUniformMatrix4fv(self.normal_shader.locations['VPMatrix'], 1, GL_TRUE, transform)
+        glUniformMatrix4fv(self.normal_shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
+
+        # Draw the meshes
+        for mesh in self.meshes:
+            mesh.draw(self.normal_shader.locations)
 
         shaders.glUseProgram(0)
         SDL_GL_SwapWindow(self.window)
@@ -254,7 +214,8 @@ class Context:
             self.t0 = t
             self.frames = 0
 
-    def get_ProjectionMatrix(self):
+    @property
+    def projectionmatrix(self):
         # See http://www.songho.ca/opengl/gl_projectionmatrix.html
         # Or 'Red Book' chapter 5
         return np.array([[self.near / self.right, 0, 0, 0],
@@ -267,33 +228,70 @@ class Context:
         if event.key.keysym.sym == SDLK_ESCAPE:
             sys.exit()
 
-        if event.key.keysym.sym == SDLK_UP:
+        if event.key.keysym.sym == SDLK_UP or event.key.keysym.sym == SDLK_w:
             self.camera.move_forward(0.1)
 
-        if event.key.keysym.sym == SDLK_DOWN:
+        if event.key.keysym.sym == SDLK_DOWN or event.key.keysym.sym == SDLK_s:
             self.camera.move_backward(0.1)
 
-        if event.key.keysym.sym == SDLK_LEFT:
+        if  event.key.keysym.sym == SDLK_a:
+            self.camera.move_left(0.1)
+
+        if event.key.keysym.sym == SDLK_d:
+            self.camera.move_right(0.1)
+
+        if event.key.keysym.sym == SDLK_LEFT  or event.key.keysym.sym == SDLK_q:
             self.camera.rotation[1] += 0.05
 
-        if event.key.keysym.sym == SDLK_RIGHT:
+        if event.key.keysym.sym == SDLK_RIGHT  or event.key.keysym.sym == SDLK_e:
             self.camera.rotation[1] -= 0.05
 
         if event.key.keysym.sym == SDLK_y:
             self.lighting_direction += 0.05
 
+        # Change drawing methods
+
+        if event.key.keysym.sym == SDLK_1:
+            print "pressed 1"
+            self.current_draw_method = self.draw
+
+        if event.key.keysym.sym == SDLK_2:
+            print "pressed 2"
+            self.current_draw_method = self.draw_depth
+
+        if event.key.keysym.sym == SDLK_3:
+            self.current_draw_method = self.draw_normal
+
+        if event.key.keysym.sym == SDLK_t:
+            print self.meshes[-1]
+            self.meshes[-1].toggle_visibility()
+
+
         # Screenshot
-        if event.key.keysym.sym == SDLK_s:
+        if event.key.keysym.sym == SDLK_f:
+
+            self.draw()
             buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
-            image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
-            image = image.transpose(Image.FLIP_TOP_BOTTOM)
-            with open("test.png", 'w') as f:
-                image.save(f)
-            print "took screenshot"
+            color_image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
+            color_image = color_image.transpose(Image.FLIP_TOP_BOTTOM)
+            self.draw_depth()
+            buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
+            depth_image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
+            depth_image = depth_image.transpose(Image.FLIP_TOP_BOTTOM)
 
-        if event.key.keysym.sym == SDLK_d:
-             print "Debug info"
+            with open("screen_color.png", 'w') as f:
+                color_image.save(f)
+            with open("screen_depth.png", 'w') as f:
+                depth_image.save(f)
 
+            print "took screenshot and saved as 'screen_color.png' and 'screen_depth.png'"
+
+        if event.key.keysym.sym == SDLK_g:
+            print "Debug info (Key g)"
+            print ""
+
+    def resize_event(self, event):
+        self.reshape(event.window.data1, event.window.data2)
 
     def reshape(self, width, height):
         glViewport(0, 0, width, height)
@@ -321,27 +319,52 @@ if __name__ == '__main__':
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1)
 
     # Create the context with a sphere in it
-    c = Context(width=600, height=600)
-    c.addmesh(Icosphere())
+    c = Context(width=300, height=300)
+    c.addmesh(meshes.Icosphere(color=np.array([1.0, 0.9, 0]), position=np.array([1, 0, 0])))
+    c.addmesh(meshes.Icosphere(color=np.array([1.0, 0.6, 0]), position=np.array([-1, 0, -1])))
+    c.addmesh(meshes.Square())
+    c.addmesh(meshes.Depthmap())
     c.print_information()
 
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_CULL_FACE)
     glEnable(GL_MULTISAMPLE)
+    glEnable(GL_PROGRAM_POINT_SIZE)
     glCullFace(GL_BACK)
+
+    # Put up the texture
+    im = Image.open("texture.png")
+    im = im.transpose(Image.FLIP_TOP_BOTTOM)
+    ix, iy, imagebytes = im.size[0], im.size[1], im.tobytes("raw")
+    ID = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, ID)
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, ix, iy, 0, GL_RGB, GL_UNSIGNED_BYTE, imagebytes)
 
     # The Loop
     running = True
     event = SDL_Event()
     while running:
         while SDL_PollEvent(ctypes.byref(event)) != 0:
+
             if event.type == SDL_QUIT:
                 running = False
             if event.type == events.SDL_KEYDOWN:
                 c.keyPressed(event)
-            if (event.type == SDL_MOUSEMOTION):
+            if event.type == SDL_MOUSEMOTION:
                 pass
-            if (event.type == SDL_MOUSEBUTTONDOWN):
+            if event.type == SDL_MOUSEBUTTONDOWN:
                 pass
-        c.draw()
+            if event.type == SDL_WINDOWEVENT and event.window.event == SDL_WINDOWEVENT_RESIZED:
+                c.resize_event(event)
 
+        glEnable(GL_TEXTURE_2D)
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+        #glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+        glBindTexture(GL_TEXTURE_2D, ID)
+        c.current_draw_method()

@@ -191,9 +191,9 @@ class Context:
 
     def init_shader(self):
 
-        with open("vertex-shader.glsl") as f:
+        with open("vertex-shader-simple.glsl") as f:
             vertex = shaders.compileShader(f.read(), GL_VERTEX_SHADER)
-        with open("fragment-shader.glsl") as f:
+        with open("fragment-shader-simple.glsl") as f:
             fragment = shaders.compileShader(f.read(), GL_FRAGMENT_SHADER)
         self.shader = shaders.compileProgram(vertex, fragment)
 
