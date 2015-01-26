@@ -9,10 +9,12 @@ uses SDL2 for this reason.
 
 ## Keyboard 
 
-  - Arrow Keys: Move around
+  - 1, 2, 3: Switch between color, depth and normal shader
+  - Arrow Keys + WASD: Move around
   - Y: change the lighting direction
-  - S: make a screenshot, and save file to `test.png`
-  - D: reserved key for debug information in future
+  - T: Toggle visibility of last mesh added
+  - F: make a screenshot, and save file to `screen-depth.png` and `screen-color.png`
+  - G: reserved key for debug information in future
 
 ## Prerequisites
 

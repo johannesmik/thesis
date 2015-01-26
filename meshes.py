@@ -204,7 +204,7 @@ class Depthmap(Pointcloud):
         for i in range(height):
             for j in range(width):
                 if 1 <= i < height-1 and 1 <= j < width-1:
-                    # Calculate norm
+                    # Horizonalt-Vertical and Diagonal vectors
                     v1 = depth_array[i+1, j] - depth_array[i-1, j]
                     v2 = depth_array[i, j-1] - depth_array[i, j+1]
                     v3 = depth_array[i+1, j-1] - depth_array[i-1, j+1]
@@ -216,22 +216,14 @@ class Depthmap(Pointcloud):
                     v3 = v3/np.linalg.norm(v3)
                     v4 = v4/np.linalg.norm(v4)
 
+                    # Calculate norm
                     normals[i, j] = np.cross(v1, v2) + np.cross(v3, v4)
 
         self.vertices = vbo.VBO(np.reshape(depth_array, (width*height, 3)), usage=GL_STATIC_DRAW)
 
         self.colors = vbo.VBO(np.array([[0,1,0]]*self.numpoints, 'float32'), usage=GL_STATIC_DRAW)
 
-        #self.texcoords = vbo.VBO(np.array([[1, 1]]*width*height, 'float32'), usage=GL_STATIC_DRAW)
-
         self.normals = vbo.VBO(np.reshape(normals, (width*height, 3)), usage=GL_STATIC_DRAW)
-
-        # Lower triangles
-        #self.indices = [[i, i+1, i+width+1] for i in range(0, width*height-width) if (i-1)%width != 0]
-        # Upper triangles
-        #self.indices.extend([[i, i+1, i-width] for i in range(width, width*height) if (i-1)%width != 0])
-
-
 
 class Icosphere(Mesh):
     """ Create a mesh for an Icosphere """

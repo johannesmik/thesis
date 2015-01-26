@@ -6,7 +6,8 @@ attribute vec2 texcoords;
 attribute vec3 normal;
 
 uniform mat4 MMatrix;
-uniform mat4 VPMatrix;
+uniform mat4 PMatrix;
+uniform mat4 VMatrix;
 
 varying vec4 normal0;
 varying vec2 texcoords0;
@@ -19,6 +20,8 @@ void main() {
     texcoords0 = texcoords;
 
     // Calculate position in Clip space
-    gl_Position = VPMatrix * MMatrix * vec4(position, 1);
+    gl_Position = PMatrix * VMatrix * MMatrix * vec4(position, 1);
+
+    // Define point size
     gl_PointSize = 5.0;
 }
