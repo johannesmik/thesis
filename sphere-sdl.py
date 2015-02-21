@@ -6,6 +6,7 @@ from OpenGL.GL import *
 from sdl2 import *
 from OpenGL.GL import shaders
 from OpenGL.arrays import vbo
+from OpenGL.GL.framebufferobjects import *
 from PIL import Image
 import numpy as np
 import sys
@@ -168,6 +169,19 @@ class Context:
         glEnable(GL_PROGRAM_POINT_SIZE)
         glCullFace(GL_BACK)
 
+        # Initialize Framebuffer / Renderbuffer
+        if not glBindRenderbuffer and not glBindFramebuffer:
+            print 'Missing required extensions!'
+            sys.exit()
+
+        self.fbo = glGenFramebuffers(1)
+        self.rbo = glGenRenderbuffers(1)
+        glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
+        glBindRenderbuffer(GL_RENDERBUFFER, self.rbo)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, self.width, self.height)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, self.rbo)
+        glBindRenderbuffer(GL_RENDERBUFFER, 0)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
     def init_sdl(self):
         SDL_Init(SDL_INIT_EVERYTHING)
@@ -197,6 +211,11 @@ class Context:
         self.normal_shader = Shader('vertex.glsl', 'fragment-normal.glsl',
                                     ['position', 'color', 'normal', 'texcoords'],
                                     ['PMatrix', 'MMatrix', 'VMatrix'])
+
+    def draw_to_renderbuffer(self):
+        glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
+        self.current_draw_method()
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
     def draw_color(self):
         glClearColor(1.6, 1.6, 1.7, 1.0)
@@ -364,11 +383,18 @@ class Context:
 
     def reshape(self, width, height):
         ''' Resize the frustum. Width and height in pixels. '''
+        self.width, self.height = width, height
+
         glViewport(0, 0, width, height)
         aspect = float(height) / width
 
         self.camera.top, self.camera.bottom = aspect, -aspect
         self.camera.width, self.camera.height = width, height
+
+        # Resize Renderbuffer object
+        glBindRenderbuffer(GL_RENDERBUFFER, self.rbo)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, self.width, self.height)
+        glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
     def controlloop(self):
         while SDL_PollEvent(ctypes.byref(self.event)) != 0:
