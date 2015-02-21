@@ -74,6 +74,27 @@ class Camera:
                          [0, 0, -1, 0]])
 
     @property
+    def projectionmatrix2(self):
+        # Got those from Christian
+        # TODO double check them
+        w = self.right - self.left
+        h = self.top - self.bottom
+        ox = 0.5
+        oy = 0.5
+        fx = 1
+        fy = 1
+        ortho = np.array([[2. / w, 0, 0, - 1],
+                          [0, 2. / -h, 0, 1],
+                          [0, 0, -2. / (self.far - self.near), (-self.far - self.near) / (self.far - self.near)],
+                          [0, 0, 0, 1]])
+        cam = np.array([[fx, 0, -ox - 0.5, 0],
+                        [0, fy, -oy - 0.5 , 0],
+                        [0, 0, self.near + self.far, self.near * self.far],
+                        [0, 0, -1, 0]])
+        return np.dot(ortho, cam)
+
+
+    @property
     def translationmatrix(self):
         translation = np.eye(4)
         translation[0:3, 3] = - self.position
@@ -119,7 +140,7 @@ class Context:
         self.width = width
         self.height = height
         self.meshes = []
-        self.camera = Camera(position=np.array([0, 0, 2.0]))
+        self.camera = Camera(position=np.array([0., 0., 0.]))
         self.lighting_direction = 0
         self.current_draw_method = self.draw_color
 
@@ -132,6 +153,9 @@ class Context:
 
     def addmesh(self, mesh):
         self.meshes.append(mesh)
+
+    def popmesh(self):
+        return self.meshes.pop()
 
     def init_framerate(self):
         self.tStart = self.t0 = time.time()
@@ -158,6 +182,7 @@ class Context:
         self.window = SDL_CreateWindow("OpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                        self.width, self.height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE)
         SDL_GL_CreateContext(self.window)
+        self.event = SDL_Event()
 
     def init_shaders(self):
         self.color_shader = Shader('vertex.glsl', 'fragment-color.glsl',
@@ -174,7 +199,7 @@ class Context:
                                     ['PMatrix', 'MMatrix', 'VMatrix'])
 
     def draw_color(self):
-        glClearColor(0.6, 0.6, 0.7, 1.0)
+        glClearColor(1.6, 1.6, 1.7, 1.0)
         self.framerate()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -184,7 +209,7 @@ class Context:
         glUniformMatrix4fv(self.color_shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
         glUniformMatrix4fv(self.color_shader.locations['VMatrix'], 1, GL_TRUE, self.camera.viewmatrix)
         glUniformMatrix4fv(self.color_shader.locations['PMatrix'], 1, GL_TRUE, self.camera.projectionmatrix)
-        glUniform4f(self.color_shader.locations['light_direction'], math.sin(self.lighting_direction), -1, -1, 1)
+        glUniform4f(self.color_shader.locations['light_direction'], math.sin(self.lighting_direction), 0, -1, 1)
 
         # Draw the meshes
         for mesh in self.meshes:
@@ -196,7 +221,7 @@ class Context:
     def draw_depth(self):
 
         # Drawing the depth map
-        glClearColor(0.0, 0.0, 0.0, 1.0)
+        glClearColor(1.0, 1.0, 1.0, 1.0)
         self.framerate()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -290,39 +315,46 @@ class Context:
             self.lighting_direction += 0.05
 
         # Change drawing methods
-        if event.key.keysym.sym == SDLK_1:
+        if event.key.keysym.sym == SDLK_1 or event.key.keysym.sym == SDLK_r:
             self.current_draw_method = self.draw_color
 
-        if event.key.keysym.sym == SDLK_2:
+        if event.key.keysym.sym == SDLK_2 or event.key.keysym.sym == SDLK_n:
             self.current_draw_method = self.draw_depth
 
-        if event.key.keysym.sym == SDLK_3:
+        if event.key.keysym.sym == SDLK_3 or event.key.keysym.sym == SDLK_v:
             self.current_draw_method = self.draw_normal
 
         if event.key.keysym.sym == SDLK_t:
             print self.meshes[-1]
             self.meshes[-1].toggle_visibility()
 
-        # Screenshot
+        # Screenshots
         if event.key.keysym.sym == SDLK_f:
-
             self.draw_color()
             buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
             color_image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
             color_image = color_image.transpose(Image.FLIP_TOP_BOTTOM)
+            with open("screen_color.png", 'w') as f:
+                color_image.save(f)
+            print "took color screenshot saved as 'screen_color.png'"
+        if event.key.keysym.sym == SDLK_g:
             self.draw_depth()
             buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
             depth_image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
             depth_image = depth_image.transpose(Image.FLIP_TOP_BOTTOM)
-
-            with open("screen_color.png", 'w') as f:
-                color_image.save(f)
             with open("screen_depth.png", 'w') as f:
                 depth_image.save(f)
+            print "took depth screenshot and saved as 'screen_depth.png'"
+        if event.key.keysym.sym == SDLK_h:
+            self.draw_normal()
+            buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
+            normal_image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
+            normal_image = normal_image.transpose(Image.FLIP_TOP_BOTTOM)
+            with open("screen_normal.png", 'w') as f:
+                normal_image.save(f)
+            print "took depth screenshot saved as 'screen_normal.png'"
 
-            print "took screenshot and saved as 'screen_color.png' and 'screen_depth.png'"
-
-        if event.key.keysym.sym == SDLK_g:
+        if event.key.keysym.sym == SDLK_p:
             print "Debug info (Key g)"
             print ""
 
@@ -337,6 +369,23 @@ class Context:
 
         self.camera.top, self.camera.bottom = aspect, -aspect
         self.camera.width, self.camera.height = width, height
+
+    def controlloop(self):
+        while SDL_PollEvent(ctypes.byref(self.event)) != 0:
+
+            if self.event.type == SDL_QUIT:
+                return False
+            if self.event.type == events.SDL_KEYDOWN:
+                c.keyPressed(self.event)
+            if self.event.type == SDL_MOUSEMOTION:
+                pass
+            if self.event.type == SDL_MOUSEBUTTONDOWN:
+                pass
+            if self.event.type == SDL_WINDOWEVENT and self.event.window.event == SDL_WINDOWEVENT_RESIZED:
+                c.resize_event(self.event)
+
+        self.current_draw_method()
+        return True
 
     @staticmethod
     def print_information():
@@ -353,29 +402,22 @@ if __name__ == '__main__':
     c = Context(width=300, height=300)
 
     # Add some simple meshes to the context
-    c.addmesh(meshes.Icosphere(color=np.array([1.0, 0.9, 0]), position=np.array([1, 0, 0])))
-    c.addmesh(meshes.Icosphere(color=np.array([1.0, 0.6, 0]), position=np.array([-1, 0, -1])))
-    c.addmesh(meshes.Square())
-    c.addmesh(meshes.Depthmap())
-
+    c.addmesh(meshes.Icosphere(color=np.array([1.0, 1.0, 1.0]), position=np.array([0, 0, -2])))
+    #c.addmesh(meshes.Icosphere(color=np.array([1.0, 0.6, 0]), position=np.array([-2, 0, -1])))
+    #c.addmesh(meshes.Icosphere(color=np.array([1.0, 0.6, 0]), position=np.array([0, 4, -15])))
+    #c.addmesh(meshes.Square(position=np.array([-2,0,-4])))
+    #c.addmesh(meshes.Depthmap())
+    #c.addmesh(meshes.StructureDepthmap(file="face-depth.png"))
+    #c.addmesh(meshes.Pointcloud(vertices=np.array([[0, 0, -2], [1, 0, -5]])))
     # Print information about the Graphics card
     c.print_information()
 
+    # Move camera to a convenient location
+    #c.camera.position[2] += 0.8
+    #c.camera.position[0] += 1.5
+    #c.camera.rotation[1] += 0.75
+
     # The Loop
     running = True
-    event = SDL_Event()
     while running:
-        while SDL_PollEvent(ctypes.byref(event)) != 0:
-
-            if event.type == SDL_QUIT:
-                running = False
-            if event.type == events.SDL_KEYDOWN:
-                c.keyPressed(event)
-            if event.type == SDL_MOUSEMOTION:
-                pass
-            if event.type == SDL_MOUSEBUTTONDOWN:
-                pass
-            if event.type == SDL_WINDOWEVENT and event.window.event == SDL_WINDOWEVENT_RESIZED:
-                c.resize_event(event)
-
-        c.current_draw_method()
+        running = c.controlloop()
