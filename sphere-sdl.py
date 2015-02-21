@@ -289,6 +289,42 @@ class Context:
             self.t0 = t
             self.frames = 0
 
+    def screenshot(self, mode, filename):
+        """
+        Takes a screenshot of the current view.
+
+        :param mode: 'color', 'depth', or 'normal'
+        :type mode: String
+        :param filename: Filename where screenshot is saved
+        :type filename: String
+        :return: None
+        """
+
+        # Draw to renderbuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
+        self.current_draw_method()
+
+        if mode == 'color':
+            self.draw_color()
+        elif mode == 'depth':
+            self.draw_depth()
+        elif mode == 'normal':
+            self.draw_normal()
+        else:
+            print "mode %s not supported" % mode
+            return
+
+        buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
+        image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        with open(filename, 'w') as f:
+            image.save(f)
+
+        print "took %s screenshot and saved as '%s'" % (mode, filename)
+
+        # Clean up
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
     def put_up_texture(self):
         # Put up the texture
         im = Image.open("texture.png")
@@ -349,29 +385,13 @@ class Context:
 
         # Screenshots
         if event.key.keysym.sym == SDLK_f:
-            self.draw_color()
-            buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
-            color_image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
-            color_image = color_image.transpose(Image.FLIP_TOP_BOTTOM)
-            with open("screen_color.png", 'w') as f:
-                color_image.save(f)
-            print "took color screenshot saved as 'screen_color.png'"
+            self.screenshot('color', 'images/screen_color.png')
+
         if event.key.keysym.sym == SDLK_g:
-            self.draw_depth()
-            buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
-            depth_image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
-            depth_image = depth_image.transpose(Image.FLIP_TOP_BOTTOM)
-            with open("screen_depth.png", 'w') as f:
-                depth_image.save(f)
-            print "took depth screenshot and saved as 'screen_depth.png'"
+            self.screenshot('depth', 'images/screen_depth.png')
+
         if event.key.keysym.sym == SDLK_h:
-            self.draw_normal()
-            buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
-            normal_image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
-            normal_image = normal_image.transpose(Image.FLIP_TOP_BOTTOM)
-            with open("screen_normal.png", 'w') as f:
-                normal_image.save(f)
-            print "took depth screenshot saved as 'screen_normal.png'"
+            self.screenshot('normal', 'images/screen_normal.png')
 
         if event.key.keysym.sym == SDLK_p:
             print "Debug info (Key g)"
