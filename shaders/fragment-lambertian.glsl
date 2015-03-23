@@ -20,6 +20,7 @@ varying vec3 position_c;
 #define MAX_AMBIENT_LIGHTS 2
 #define MAX_DIRECTION_LIGHTS 2
 #define MAX_POINT_LIGHTS 2
+#define MAX_SPOT_LIGHTS 2
 
 struct AmbientLight
 {
@@ -42,6 +43,16 @@ struct PointLight
 };
 uniform PointLight pointlights[MAX_POINT_LIGHTS];
 
+struct SpotLight
+{
+    vec4 color;
+    vec3 position;
+    vec3 direction;
+    float falloff;
+    float cone_angle; // in Radians
+};
+uniform SpotLight spotlights[MAX_SPOT_LIGHTS];
+
 float rand(vec2 co){
     /* This can be used for simple, and fast noise */
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -53,7 +64,6 @@ vec3 ambient_intensity(vec3 basecolor, AmbientLight light){
 
 vec3 diffuse_intensity(DirectionLight light, vec3 normal0){
     /* The diffuse component (Lambertian) for DirectionLight */
-    // TODO account for light distance
 
     // Normalize the light direction if not a null-vector
     vec3 direction;
@@ -71,6 +81,24 @@ vec3 diffuse_intensity(PointLight light, vec3 normal0, vec3 position){
 
     float distance = length(position - light.position);
     vec3 direction = - normalize(position - light.position);
+
+    vec3 intensity = dot(direction, normal0) * light.color.rgb;
+    float attenuation = 1 / ( 1 + light.falloff * distance * distance);
+    return clamp(attenuation * intensity, 0, 1);
+}
+
+vec3 diffuse_intensity(SpotLight light, vec3 normal0, vec3 position){
+    /* The diffuse component (Lambertian) for SpotLight */
+
+    // Check if angle is in
+
+    float distance = length(position - light.position);
+    vec3 direction = - normalize(position - light.position);
+
+    // Check if angle (between ray-direction and cone-direction) is within the limits
+    float angle = acos(dot(direction, normalize(light.direction)));
+    if (angle > light.cone_angle)
+        return vec3(0, 0, 0);
 
     vec3 intensity = dot(direction, normal0) * light.color.rgb;
     float attenuation = 1 / ( 1 + light.falloff * distance * distance);
@@ -107,6 +135,11 @@ void main(){
     /* Point Lights */
     for(int i = 0; i < MAX_POINT_LIGHTS; i++){
         diffuse += diffuse_intensity(pointlights[i], normal, position_w);
+    }
+
+    /* Spot Lights */
+    for(int i = 0; i < MAX_SPOT_LIGHTS; i++){
+        diffuse += diffuse_intensity(spotlights[i], normal, position_w);
     }
 
     // TODO think about another name for 'color'

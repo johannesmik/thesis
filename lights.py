@@ -52,4 +52,11 @@ class AmbientLight(Light):
         self.uniforms['color'] = (color, 4)
 
 class SpotLight(Light):
-    pass
+    def __init__(self, position, direction, cone_angle, color, falloff):
+        self.lighttype = 'spotlights'
+        self.uniforms = {}
+        self.uniforms['color'] = [color, 4]
+        self.uniforms['position'] = [position, 3]
+        self.uniforms['direction'] = [direction, 3]
+        self.uniforms['cone_angle'] = [cone_angle, 1]
+        self.uniforms['falloff'] = [falloff, 1]

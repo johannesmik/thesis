@@ -99,7 +99,6 @@ class exampleScene5(Scene):
         Example for Pointlights
     '''
 
-
     def __init__(self):
         super(exampleScene5, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
 
@@ -129,3 +128,32 @@ class exampleScene5(Scene):
         light = lights.PointLight(position=np.array([1.5, 0, -2]), color=np.array([1, 1, 1, 1]), falloff=1)
         self.addLight(light)
 
+class exampleScene6(Scene):
+    ''' Two spheres and a Rectangle with one Spot Light (And light fall-off)
+
+        Example for Spot Lights
+    '''
+
+
+    def __init__(self):
+        super(exampleScene6, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+
+        sphere_geometry = meshes.IcosphereGeometry()
+        sphere_material = materials.LambertianMaterial()
+        sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry, material=sphere_material)
+        self.addMesh(sphere)
+
+        sphere_geometry = meshes.IcosphereGeometry()
+        sphere_material = materials.LambertianMaterial()
+        sphere = meshes.Mesh(name='Sphere 2', position=np.array([0, 0, -5]), geometry=sphere_geometry, material=sphere_material)
+        self.addMesh(sphere)
+
+        square_geometry = meshes.SquareGeometry()
+        square_material = materials.LambertianMaterial()
+        square = meshes.Mesh(name='Square', position=np.array([0, 0, -3.5]), geometry=square_geometry, material=square_material)
+        square.size = 2
+        self.addMesh(square)
+
+        light = lights.SpotLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0,
+                                 cone_angle=np.pi/8., direction=np.array([0, 0, 2]))
+        self.addLight(light)
