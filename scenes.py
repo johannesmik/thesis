@@ -92,3 +92,40 @@ class exampleScene4(Scene):
 
         light = lights.DirectionalLight(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
         self.addLight(light)
+
+class exampleScene5(Scene):
+    ''' Four spheres with two Point Light (And light fall-off)
+
+        Example for Pointlights
+    '''
+
+
+    def __init__(self):
+        super(exampleScene5, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+
+        sphere_geometry = meshes.IcosphereGeometry()
+        sphere_material = materials.LambertianMaterial()
+        sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry, material=sphere_material)
+        self.addMesh(sphere)
+
+        sphere_geometry = meshes.IcosphereGeometry()
+        sphere_material = materials.LambertianMaterial()
+        sphere = meshes.Mesh(name='Sphere 2', position=np.array([-2, 0, 0]), geometry=sphere_geometry, material=sphere_material)
+        self.addMesh(sphere)
+
+        sphere_geometry = meshes.IcosphereGeometry()
+        sphere_material = materials.LambertianMaterial()
+        sphere = meshes.Mesh(name='Sphere 3', position=np.array([0, 2, 0]), geometry=sphere_geometry, material=sphere_material)
+        self.addMesh(sphere)
+
+        sphere_geometry = meshes.IcosphereGeometry()
+        sphere_material = materials.LambertianMaterial()
+        sphere = meshes.Mesh(name='Sphere 4', position=np.array([0, 0, -5]), geometry=sphere_geometry, material=sphere_material)
+        self.addMesh(sphere)
+
+        light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.1)
+        self.addLight(light)
+
+        light = lights.PointLight(position=np.array([1.5, 0, -2]), color=np.array([1, 1, 1, 1]), falloff=1)
+        self.addLight(light)
+

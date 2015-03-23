@@ -179,12 +179,14 @@ class Context:
         if t - self.t0 >= updaterate:
             seconds = t - self.t0
             fps = self.frames / seconds
+
+            if self.show_framerate:
+                print "%.0f frames in %3.1f seconds = %6.3f FPS" % (self.frames, seconds, fps)
+
             self.t0 = t
             self.frames = 0
             SDL_GL_SwapWindow(self.window)
 
-            if self.show_framerate:
-                print "%.0f frames in %3.1f seconds = %6.3f FPS" % (self.frames, seconds, fps)
 
     def screenshot(self, scene, camera, filename):
         """
@@ -309,7 +311,7 @@ if __name__ == '__main__':
     c = Context(width=500, height=500)
     c.print_opengl_info()
 
-    scene = scenes.exampleScene4()
+    scene = scenes.exampleScene5()
     camera = cameras.PerspectiveCamera()
 
     # The Loop

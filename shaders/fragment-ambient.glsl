@@ -5,7 +5,7 @@ uniform vec3 basecolor;
 
 varying vec3 normal0;
 varying vec2 texcoords0;
-varying vec3 position1;
+varying vec3 position_c;
 
 #define MAX_AMBIENT_LIGHTS 3
 

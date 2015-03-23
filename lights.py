@@ -39,7 +39,11 @@ class DirectionalLight(Light):
 
 class PointLight(Light):
     def __init__(self, position, color, falloff):
-        pass
+        self.lighttype = 'pointlights'
+        self.uniforms = {}
+        self.uniforms['color'] = [color, 4]
+        self.uniforms['position'] = [position, 3]
+        self.uniforms['falloff'] = [falloff, 1]
 
 class AmbientLight(Light):
     def __init__(self, color):
