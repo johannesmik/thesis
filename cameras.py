@@ -76,10 +76,8 @@ class PerspectiveCamera(Camera):
         self.top, self.bottom = 1.0, -1.0
 
     def reshape(self, width, height):
-
         aspect = float(height) / width
         self.top, self.bottom = aspect, -aspect
-        self.width, self.height = width, height
 
     @property
     def projectionmatrix(self):
@@ -90,28 +88,32 @@ class PerspectiveCamera(Camera):
                          [0, 0, -(self.far+self.near)/(self.far-self.near), -2*self.far*self.near/(self.far - self.near)],
                          [0, 0, -1, 0]])
 
-class PerspectiveCamera2(PerspectiveCamera):
+class PerspectiveCamera2(Camera):
     """
-    Use another Projection Matrix
+    Use another Projection Matrix, such that there is a linear relationship between Z (world) and z_c (clip)
     """
-    def __init__(self, position=None, rotation=None):
-        super(PerspectiveCamera, self).__init__(name=name, position=position, rotation=rotation)
+    def __init__(self, name=None, position=None, rotation=None):
+        super(PerspectiveCamera2, self).__init__(name=name, position=position, rotation=rotation)
+
+        self.ox, self.oy = 0, 0
+        self.fx, self.fy = 1, 1
+        self.right, self.top = 1., 1.
+
+        self.near, self.far = 1., 20.
+
+    def reshape(self, width, height):
+        aspect = float(height) / width
+        self.top = aspect
 
     @property
     def projectionmatrix(self):
         # TODO double check this projection matrix. Consult Ma et al, chapter 3.
-        w = self.right - self.left
-        h = self.top - self.bottom
-        ox = 0.5
-        oy = 0.5
-        fx = 1
-        fy = 1
-        ortho = np.array([[2. / w, 0, 0, - 1],
-                          [0, 2. / -h, 0, 1],
-                          [0, 0, -2. / (self.far - self.near), (-self.far - self.near) / (self.far - self.near)],
+        ortho = np.array([[1. / self.right, 0, 0, 0],
+                          [0, 1. / self.top, 0, 0],
+                          [0, 0, -2. / (self.far - self.near), - (self.far + self.near) / (self.far - self.near)],
                           [0, 0, 0, 1]])
-        cam = np.array([[fx, 0, -ox - 0.5, 0],
-                        [0, fy, -oy - 0.5 , 0],
+        cam = np.array([[self.fx, 0, self.ox, 0],
+                        [0, self.fy, self.oy, 0],
                         [0, 0, self.near + self.far, self.near * self.far],
                         [0, 0, -1, 0]])
         return np.dot(ortho, cam)
