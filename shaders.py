@@ -63,3 +63,7 @@ class ShaderLib:
         self.lambertian = Shader('shaders/vertex.glsl', 'shaders/fragment-lambertian.glsl',
                             ['position', 'color', 'normal', 'texcoords'],
                             ['PMatrix', 'MMatrix', 'VMatrix',  'colormap', 'normalmap', 'basecolor', 'use_normalmap'])
+
+        self.materiala = Shader('shaders/vertex.glsl', 'shaders/fragment-materiala.glsl',
+                            ['position', 'color', 'normal', 'texcoords'],
+                            ['PMatrix', 'MMatrix', 'VMatrix',  'colormap', 'normalmap', 'basecolor', 'use_depthmap'])

@@ -5,7 +5,6 @@ uniform float light_intensity;
 uniform bool light_isDirectional;
 uniform bool light_isPoint;
 
-uniform bool use_normalmap;
 uniform bool use_depthmap;
 
 uniform sampler2D colormap;
@@ -110,22 +109,24 @@ vec3 diffuse_intensity(SpotLight light, vec3 normal0, vec3 position){
 void main(){
 
     vec3 normal;
-    if (use_normalmap) {
-     // Also map (0, 1) range to (-1, 1)
-     normal = normalize((texture2D(normalmap, texcoords0).rgb * 2 - 1) * texture2D(normalmap, texcoords0).a);
-    }
-    else {
-     normal = normalize(normal0);
-    }
 
     vec3 color = basecolor * texture2D(normalmap, texcoords0).rgb;
 
     /* Depthmap */
     if (use_depthmap) {
+        // Calculate the normals from the depthmap using cross products
+
+        // depthmap_factor: how far is the depthmap away from the camera?
         float depthmap_factor = 5; // TODO define this in a uniform
         float focal_length = 1; // TODO define this in a uniform
 
         //position_c = position_c + texture2D(depthmap, texcoords0).r;
+        vec3 vectorA, vectorB;
+        float diff = 0.003;
+        vectorA = vec3(0, 2*diff, texture2D(depthmap, texcoords0 + vec2(0, diff)).r - texture2D(depthmap, texcoords0 + vec2(0, -diff)).r);
+        vectorB = vec3(2*diff, 0, texture2D(depthmap, texcoords0 + vec2(diff, 0)).r - texture2D(depthmap, texcoords0 + vec2(-diff, 0)).r);
+        normal = - normalize(cross(vectorA, vectorB));
+        normal = (normal + 1) / 2;
     }
 
     /* Ambient */
@@ -155,7 +156,7 @@ void main(){
     // TODO think about another name for 'color'
     color = ambient + diffuse;
 
-    gl_FragColor = clamp(vec4(color, 1), 0.0, 1.0);
+    gl_FragColor = clamp(vec4(normal, 1), 0.0, 1.0);
 
     // Apply some cheap noise
     //gl_FragColor = gl_FragColor + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);

@@ -54,6 +54,10 @@ class BaseMaterial:
         self.add_texture('normalmap', filename)
         self.uniforms['use_normalmap'] = (True, 1)
 
+    def add_depthmap(self, filename):
+        self.add_texture('depthmap', filename)
+        self.uniforms['use_depthmap'] = (True, 1)
+
     def overwrite_texture(self, id, imagebytes, width, height):
         ''' Overwrite the texture id with imagebytes '''
         glBindTexture(GL_TEXTURE_2D, id)
@@ -102,4 +106,7 @@ class NormalMaterial(BaseMaterial):
     pass
 
 class DepthMaterial(BaseMaterial):
+    pass
+
+class MaterialA(BaseMaterial):
     pass
