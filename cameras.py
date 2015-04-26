@@ -29,6 +29,24 @@ class Camera(object):
     def move_left(self, length):
         self.move_right(-length)
 
+        self.cached_viewmatrix = False
+
+    def rotate_left(self, angle):
+        self.rotation[1] += angle
+        self.cached_viewmatrix = False
+
+    def rotate_right(self, angle):
+        self.rotation[1] -= angle
+        self.cached_viewmatrix = False
+
+    def rotate_up(self, angle):
+        self.rotation[0] -= angle
+        self.cached_viewmatrix = False
+
+    def rotate_down(self, angle):
+        self.rotation[0] += angle
+        self.cached_viewmatrix = False
+
     @property
     def translationmatrix(self):
         translation = np.eye(4)
@@ -56,6 +74,10 @@ class Camera(object):
     @property
     def viewmatrix(self):
         return np.dot(self.rotationmatrix, self.translationmatrix)
+
+    @property
+    def projectionmatrix(self):
+        pass
 
     def reshape(self, width, height):
         " Called when the dimensions of the viewport have changed "
@@ -99,7 +121,7 @@ class PerspectiveCamera2(Camera):
         self.fx, self.fy = 1, 1
         self.right, self.top = 1., 1.
 
-        self.near, self.far = 1., 20.
+        self.near, self.far = 1, 5.
 
     def reshape(self, width, height):
         aspect = float(height) / width
