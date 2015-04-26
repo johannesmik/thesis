@@ -52,6 +52,8 @@ class Context:
                 shader = self.shaderlib.normal
             elif isinstance(mesh.material, materials.LambertianMaterial):
                 shader = self.shaderlib.lambertian
+            elif isinstance(mesh.material, materials.MaterialA):
+                shader = self.shaderlib.materiala
 
             glUseProgram(shader.program)
 
@@ -64,7 +66,7 @@ class Context:
             mesh.material.put_up_textures(shader)
 
             # Put up camera uniforms
-            glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
+            #glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
             glUniformMatrix4fv(shader.locations['VMatrix'], 1, GL_TRUE, camera.viewmatrix)
             glUniformMatrix4fv(shader.locations['PMatrix'], 1, GL_TRUE, camera.projectionmatrix)
 
@@ -113,6 +115,7 @@ class Context:
                             if mesh.geometry.normals and shader.locations['normal'] != -1:
                                 mesh.geometry.normals.unbind()
                                 glDisableVertexAttribArray(shader.locations['normal'])
+        return True
 
     def init_framerate(self):
         self.tStart = self.t0 = time.time()
@@ -233,11 +236,17 @@ class Context:
         if event.key.keysym.sym == SDLK_d:
             camera.move_right(0.1)
 
-        if event.key.keysym.sym == SDLK_LEFT  or event.key.keysym.sym == SDLK_q:
-            camera.rotation[1] += 0.05
+        if event.key.keysym.sym == SDLK_LEFT:
+            camera.rotate_left(0.05)
 
-        if event.key.keysym.sym == SDLK_RIGHT  or event.key.keysym.sym == SDLK_e:
-            camera.rotation[1] -= 0.05
+        if event.key.keysym.sym == SDLK_RIGHT:
+            camera.rotate_right(0.05)
+
+        if event.key.keysym.sym == SDLK_q:
+            camera.rotate_up(0.05)
+
+        if event.key.keysym.sym == SDLK_e:
+            camera.rotate_down(0.05)
 
         if event.key.keysym.sym == SDLK_y:
             scene.lights[0].uniforms['direction'][0] = scene.lights[0].uniforms['direction'][0] + np.array([0.05, 0, 0])
@@ -308,11 +317,14 @@ class Context:
 if __name__ == '__main__':
 
     # Create the context
-    c = Context(width=500, height=500)
+    c = Context(width=200, height=200)
     c.print_opengl_info()
 
-    scene = scenes.exampleScene5()
+    scene = scenes.exampleScene9()
     camera = cameras.PerspectiveCamera()
+
+    # scene.meshes[0].material = materials.DepthMaterial()
+    # scene.meshes[1].material = materials.DepthMaterial()
 
     # The Loop
     running = True

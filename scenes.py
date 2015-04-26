@@ -65,7 +65,7 @@ class exampleScene3(Scene):
         super(exampleScene3, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
 
         square_material = materials.LambertianMaterial()
-        square_material.add_normalmap('texture_normal.png')
+        square_material.add_normalmap('images/texture_normal.png')
         square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -1.5]), geometry=meshes.SquareGeometry(), material=square_material)
         square.size = 1.5
 
@@ -154,6 +154,58 @@ class exampleScene6(Scene):
         square.size = 2
         self.addMesh(square)
 
-        light = lights.SpotLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0,
+        light = lights.SpotLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.1,
                                  cone_angle=np.pi/8., direction=np.array([0, 0, 2]))
+        self.addLight(light)
+
+class exampleScene7(Scene):
+    ' Like Scene 3 but with PointLight '
+    def __init__(self):
+
+        super(exampleScene7, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+
+        square_material = materials.LambertianMaterial()
+        square_material.add_normalmap('images/texture_normal.png')
+        square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(), material=square_material)
+        square.size = 3
+
+        light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
+
+        self.addMesh(square)
+        self.addLight(light)
+
+
+class exampleScene8(Scene):
+    ' Like Scene 4 but with a PointLight '
+
+    def __init__(self):
+        super(exampleScene8, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+
+        sphere_geometry = meshes.IcosphereGeometry(subdivisions=2)
+        sphere_material = materials.LambertianMaterial()
+        sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry, material=sphere_material)
+        self.addMesh(sphere)
+
+        square_material = materials.LambertianMaterial()
+        square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(), material=square_material)
+        square.size = 3
+        self.addMesh(square)
+
+        light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
+        self.addLight(light)
+
+class exampleScene9(Scene):
+    ' Like Scene 3 but with PointLight and material A '
+    def __init__(self):
+
+        super(exampleScene9, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+
+        square_material = materials.MaterialA()
+        square_material.add_depthmap('images/sphere_depth_blur.png')
+        square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(), material=square_material)
+        square.size = 3
+
+        light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
+
+        self.addMesh(square)
         self.addLight(light)

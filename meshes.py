@@ -149,7 +149,7 @@ class Pointcloud(Geometry):
     """ Base class for Pointcloud like meshes. """
     def __init__(self, vertices=None, position=None):
 
-        Renderable.__init__(self)
+        Geometry.__init__(self)
         if vertices == None:
             self.vertices = None
         else:
@@ -167,7 +167,7 @@ class Pointcloud(Geometry):
         tmp[0:3,3] = self.position
         return tmp
 
-class DepthmapGeometry(Geometry):
+class DepthmapGeometry(Pointcloud):
     # Recover the geometry from a Depthmap
     # TODO: universal camera. At the moment we assume certain intrinsic parameters here
     def __init__(self, file=None, position=None):
