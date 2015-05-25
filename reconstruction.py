@@ -37,6 +37,8 @@ class Minimize(object):
 
         if not camera:
             self.camera = cameras.PerspectiveCamera()
+        else:
+            self.camera = camera
 
         if not scene:
             # Initialize Scene #TODO
@@ -44,10 +46,11 @@ class Minimize(object):
         else:
             self.scene = scene
 
+        self.scene_depth = scenes.exampleScene9() # for depthmap rendering
+
         self.maxIterations = maxIterations
 
         self.material = self.scene.meshes[0].material # Material of first mesh
-        self.normalmap_id = self.material.textures['normalmap']
 
         self.ksearch = 15  # For PCL normal finding
 
@@ -119,7 +122,7 @@ class Minimize(object):
         " Calculate the intensity from a normalmap (and a depthmap). [Depthmap for light attenuation reasons] "
 
         height, width, colors = normalmap.shape
-        self.material.overwrite_texture(self.normalmap_id, np.flipud(normalmap).astype('uint8').tobytes(), width, height)
+        self.material.overwrite_texture('normalmap', np.flipud(normalmap).astype('uint8').tobytes(), width, height)
         self.context._render(self.scene, self.camera)
         intensity = self.context.current_buffer()[:,:,0]
 
@@ -132,6 +135,8 @@ class Minimize(object):
         elif self.normal == 'pcl':
             normal = self.normals_from_pcl(depthmap)
             normal = ((normal + 1) / 2.) * 255
+        elif self.normal == 'opengl':
+            normal = self.normals_from_opengl(depthmap)
         return normal
 
     def normals_from_pcl(self, depthmap):
@@ -175,6 +180,18 @@ class Minimize(object):
     def normals_from_scharr(self, depthmap):
         # TODO
         print "normals from scharr not implemented yet"
+
+    def normals_from_opengl(self, depthmap):
+
+        height, width = depthmap.shape
+
+        normal = 255 * np.ones((height, width, 4), dtype='float64')
+
+        self.scene_depth.meshes[0].material.overwrite_texture_bw('depthmap', np.flipud(depthmap).astype('uint8').tobytes(), width, height)
+        self.context._render(self.scene_depth, self.camera)
+        normal[:,:,:3] = self.context.current_buffer()[:,:,:]
+
+        return normal
 
     def optimize(self, start_depthmap):
         " Optimize start value and recalculate results. "
@@ -365,11 +382,14 @@ def squares(glcontext):
 
 if __name__ == '__main__':
 
-    test = "2"
+    test = "1"
 
     if test == "1":
 
-        width, height = 30, 30
+        # Fixed width and height
+        # Different filtered input: Non-filtered, Median, 127-Start
+
+        width, height = 50, 50
 
         glcontext = context.Context(width=width, height=height, show_framerate=False)
 
@@ -388,7 +408,7 @@ if __name__ == '__main__':
         sensor_intensitymap = intensitymap + sigma * np.random.randn(*intensitymap.shape) + mu
 
         smooth_normal_minimizer = Minimize(sensor_depthmap, sensor_intensitymap, ground_depth, ground_intensity,
-                                           normal='pcl', glcontext=glcontext, camera=None, scene=None, maxIterations=30)
+                                           normal='opengl', glcontext=glcontext, camera=None, scene=None, maxIterations=5)
         # Unfiltered Start Depth
         start_depthmap = sensor_depthmap.copy()
 
@@ -396,7 +416,7 @@ if __name__ == '__main__':
         smooth_normal_minimizer.show_results(plottitle="Unfiltered Start Depth")
         smooth_normal_minimizer.save_results("results/unfiltered")
 
-        # Median Filtered Start Depth
+        #Median Filtered Start Depth
         start_depthmap = sensor_depthmap.copy()
         start_depthmap = np.clip(start_depthmap, 0, 255) / 255.0
         median(start_depthmap, disk(2), out=start_depthmap)
