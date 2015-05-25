@@ -249,8 +249,8 @@ class Context:
             camera.rotate_down(0.05)
 
         if event.key.keysym.sym == SDLK_y:
-            scene.lights[0].uniforms['direction'][0] = scene.lights[0].uniforms['direction'][0] + np.array([0.05, 0, 0])
-            print scene.lights[0].uniforms['direction'][0]
+            scene.lights[0].uniforms['position'][0] = 0.1 + scene.lights[0].uniforms['position'][0]
+            print scene.lights[0].uniforms['position'][0]
 
         if event.key.keysym.sym == SDLK_t:
             print scene.meshes[-1]
@@ -322,9 +322,6 @@ if __name__ == '__main__':
 
     scene = scenes.exampleScene9()
     camera = cameras.PerspectiveCamera()
-
-    # scene.meshes[0].material = materials.DepthMaterial()
-    # scene.meshes[1].material = materials.DepthMaterial()
 
     # The Loop
     running = True
