@@ -33,7 +33,6 @@ class BaseMaterial:
                 glUniform3f(location, *uniform_value)
             elif uniform_value_len == 4:
                 glUniform4f(location, *uniform_value)
-            print uniform_name, location
 
     def empty_texture(self, color='white'):
         "Create a one-by-one pixel texture with a given color and return it's id"
@@ -64,16 +63,16 @@ class BaseMaterial:
         self.add_texture('depthmap', filename)
         self.uniforms['use_depthmap'] = True
 
-    # TODO make static, or let it use name instead of id and use id = self.textures[name]
-    def overwrite_texture(self, id, imagebytes, width, height):
+    def overwrite_texture(self, name, imagebytes, width, height):
         ''' Overwrite the texture id with imagebytes '''
+        id = self.textures[name]
         glBindTexture(GL_TEXTURE_2D, id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imagebytes)
 
-    # TODO does not give correct result yet (called from reconstruction.py)
-    def overwrite_texture_bw(self, id, imagebytes, width, height):
+    def overwrite_texture_bw(self, name, imagebytes, width, height):
         ''' Overwrite the texture id with imagebytes '''
+        id = self.textures[name]
         glBindTexture(GL_TEXTURE_2D, id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, imagebytes)
