@@ -78,19 +78,19 @@ class Context:
                             else:
                                 print "modelmatrix not found"
 
-                            if mesh.geometry.vertices and shader.locations['position'] != -1:
+                            if mesh.geometry.vertices and shader.locations.get('position', -1) != -1:
                                 glEnableVertexAttribArray(shader.locations['position'])
                                 mesh.geometry.vertices.bind()
                                 glVertexAttribPointer(shader.locations['position'], 3, GL_FLOAT, False, 3*4, mesh.geometry.vertices)
-                            if mesh.geometry.colors and shader.locations['color'] != -1:
+                            if mesh.geometry.colors and shader.locations.get('color', -1) != -1:
                                 glEnableVertexAttribArray(shader.locations['color'])
                                 mesh.geometry.colors.bind()
                                 glVertexAttribPointer(shader.locations['color'], 3, GL_FLOAT, False, 3*4, mesh.geometry.colors)
-                            if mesh.geometry.texcoords and shader.locations['texcoords'] != -1:
+                            if mesh.geometry.texcoords and shader.locations.get('texcoords', -1) != -1:
                                 glEnableVertexAttribArray(shader.locations['texcoords'])
                                 mesh.geometry.texcoords.bind()
                                 glVertexAttribPointer(shader.locations['texcoords'], 2, GL_FLOAT, False, 2*4, mesh.geometry.texcoords)
-                            if mesh.geometry.normals and shader.locations['normal'] != -1:
+                            if mesh.geometry.normals and shader.locations.get('normal', -1) != -1:
                                 glEnableVertexAttribArray(shader.locations['normal'])
                                 mesh.geometry.normals.bind()
                                 glVertexAttribPointer(shader.locations['normal'], 3, GL_FLOAT, False, 3*4, mesh.geometry.normals)
@@ -103,16 +103,16 @@ class Context:
 
                         finally:
                             glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
-                            if mesh.geometry.vertices and shader.locations['position'] != -1:
+                            if mesh.geometry.vertices and shader.locations.get('position', -1) != -1:
                                 mesh.geometry.vertices.unbind()
                                 glDisableVertexAttribArray(shader.locations['position'])
-                            if mesh.geometry.colors and shader.locations['color'] != -1:
+                            if mesh.geometry.colors and shader.locations.get('color', -1) != -1:
                                 mesh.geometry.colors.unbind()
                                 glDisableVertexAttribArray(shader.locations['color'])
-                            if mesh.geometry.texcoords and shader.locations['texcoords'] != -1:
+                            if mesh.geometry.texcoords and shader.locations.get('texcoords', -1) != -1:
                                 mesh.geometry.texcoords.unbind()
                                 glDisableVertexAttribArray(shader.locations['texcoords'])
-                            if mesh.geometry.normals and shader.locations['normal'] != -1:
+                            if mesh.geometry.normals and shader.locations.get('normal', -1) != -1:
                                 mesh.geometry.normals.unbind()
                                 glDisableVertexAttribArray(shader.locations['normal'])
         return True
@@ -320,7 +320,7 @@ if __name__ == '__main__':
     c = Context(width=200, height=200)
     c.print_opengl_info()
 
-    scene = scenes.exampleScene9()
+    scene = scenes.exampleScene6()
     camera = cameras.PerspectiveCamera()
 
     # The Loop
