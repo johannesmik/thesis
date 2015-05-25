@@ -1,11 +1,13 @@
-#version 120
+#version 150
 
 uniform sampler2D colormap;
 uniform vec3 basecolor;
 
-varying vec3 normal0;
-varying vec2 texcoords0;
-varying vec3 position_c;
+in vec3 normal0;
+in vec2 texcoords0;
+in vec3 position_c;
+
+out vec4 out_color;
 
 #define MAX_AMBIENT_LIGHTS 3
 

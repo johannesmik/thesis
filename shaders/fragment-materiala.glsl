@@ -1,4 +1,4 @@
-#version 120
+#version 150
 
 uniform vec3 light_position;
 uniform float light_intensity;
@@ -13,28 +13,31 @@ uniform sampler2D depthmap;
 
 uniform vec3 basecolor;
 
-varying vec3 normal0;
-varying vec2 texcoords0;
-varying vec3 position_w;
-varying vec3 position_c;
+in vec3 normal0;
+in vec2 texcoords0;
+in vec3 position_w;
+in vec3 position_c;
 
-#define MAX_AMBIENT_LIGHTS 2
-#define MAX_DIRECTION_LIGHTS 2
-#define MAX_POINT_LIGHTS 2
-#define MAX_SPOT_LIGHTS 2
+out vec4 out_color;
+out vec4 out_normal;
+
+#define MAX_AMBIENT_LIGHTS 0
+#define MAX_DIRECTION_LIGHTS 0
+#define MAX_POINT_LIGHTS 0
+#define MAX_SPOT_LIGHTS 0
 
 struct AmbientLight
 {
     vec4 color;
 };
-uniform AmbientLight ambientlights[MAX_AMBIENT_LIGHTS];
+uniform AmbientLight ambientlights[max(1, MAX_AMBIENT_LIGHTS)];
 
 struct DirectionLight
 {
     vec4 color;
     vec3 direction;
 };
-uniform DirectionLight directionlights[MAX_DIRECTION_LIGHTS];
+uniform DirectionLight directionlights[max(1, MAX_DIRECTION_LIGHTS)];
 
 struct PointLight
 {
@@ -42,7 +45,7 @@ struct PointLight
     vec3 position;
     float falloff;
 };
-uniform PointLight pointlights[MAX_POINT_LIGHTS];
+uniform PointLight pointlights[max(1, MAX_POINT_LIGHTS)];
 
 struct SpotLight
 {
@@ -52,7 +55,7 @@ struct SpotLight
     float falloff;
     float cone_angle; // in Radians
 };
-uniform SpotLight spotlights[MAX_SPOT_LIGHTS];
+uniform SpotLight spotlights[max(1, MAX_SPOT_LIGHTS)];
 
 float rand(vec2 co){
     /* This can be used for simple, and fast noise */
@@ -112,21 +115,39 @@ void main(){
 
     vec3 color = basecolor * texture2D(normalmap, texcoords0).rgb;
 
+    //const float diff = .01;
+    const float f = 1;
+    const float correction = 3; //TODO where does this come from?
+
     /* Depthmap */
+    /* Overwrites normal */
     if (use_depthmap) {
         // Calculate the normals from the depthmap using cross products
 
-        // depthmap_factor: how far is the depthmap away from the camera?
-        float depthmap_factor = 5; // TODO define this in a uniform
-        float focal_length = 1; // TODO define this in a uniform
 
-        //position_c = position_c + texture2D(depthmap, texcoords0).r;
-        vec3 vectorA, vectorB;
-        float diff = 0.003;
-        vectorA = vec3(0, 2*diff, texture2D(depthmap, texcoords0 + vec2(0, diff)).r - texture2D(depthmap, texcoords0 + vec2(0, -diff)).r);
-        vectorB = vec3(2*diff, 0, texture2D(depthmap, texcoords0 + vec2(diff, 0)).r - texture2D(depthmap, texcoords0 + vec2(-diff, 0)).r);
-        normal = - normalize(cross(vectorA, vectorB));
-        normal = (normal + 1) / 2;
+        vec2  texturesize = textureSize(depthmap, 0);
+        float diff_x = 1.0 / texturesize.x;
+        float diff_y = 1.0 / texturesize.y;
+
+        // depthmap_factor: how far is the depthmap away from the camera?
+        // TODO not used
+        float depthmap_factor = 5; // TODO define this in a uniform
+
+        //position_c = position_c + textureLod(depthmap, texcoords0, 0).r;
+        vec3 vectorAC, vectorDB;
+
+        float pointA_z = textureLod(depthmap, texcoords0 + vec2(-diff_x, 0), 0).r;
+        float pointC_z = textureLod(depthmap, texcoords0 + vec2(diff_x, 0), 0).r;
+        vectorAC = vec3(correction*(2*f + pointA_z + pointC_z)*diff_x/f, 0, (pointC_z - pointA_z));
+
+        float pointB_z = textureLod(depthmap, texcoords0 + vec2(0, diff_y), 0).r;
+        float pointD_z = textureLod(depthmap, texcoords0 + vec2(0, -diff_y), 0).r;
+        vectorDB = vec3(0, correction*(2*f + pointB_z + pointD_z)*diff_y/f, (pointB_z - pointD_z));
+
+        normal = normalize(cross(vectorAC, vectorDB));
+
+        // Map range (-1, 1) to range (0, 1) when visualized in color
+        normal = (normal + 1) / 2.;
     }
 
     /* Ambient */
@@ -153,10 +174,8 @@ void main(){
         diffuse += diffuse_intensity(spotlights[i], normal, position_w);
     }
 
-    // TODO think about another name for 'color'
-    color = ambient + diffuse;
-
-    gl_FragColor = clamp(vec4(normal, 1), 0.0, 1.0);
+    out_color = clamp(vec4(ambient + diffuse, 1), 0.0, 1.0);
+    out_normal = clamp(vec4(normal, 1), 0.0, 1.0);
 
     // Apply some cheap noise
     //gl_FragColor = gl_FragColor + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);

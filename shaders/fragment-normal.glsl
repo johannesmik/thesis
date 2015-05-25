@@ -1,18 +1,12 @@
-#version 120
+#version 150
 
-varying vec3 normal0;
-varying vec2 texcoords0;
-varying vec3 position1;
+in vec3 normal0;
+in vec2 texcoords0;
+in vec3 position1;
+
+out vec4 out_color;
 
 void main(){
-
-    // Simple tests
-    // They stop the GLSL compiler from too much optimization
-    if (normal0.x == -1 || texcoords0.x == -1)
-    {
-        gl_FragColor = vec4(normal0, 1);
-    }
-
     // Normalize and map resulting range from (-1,1) to (0,1)
-    gl_FragColor = vec4((normalize(normal0) + 1 ) / 2, 1);
+    out_color = vec4((normalize(normal0) + 1 ) / 2, 1);
 }

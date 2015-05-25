@@ -1,17 +1,17 @@
-#version 120
+#version 150
 
 attribute vec3 position;
 attribute vec2 texcoords;
 attribute vec3 normal;
 
 uniform mat4 MMatrix;
-uniform mat4 PMatrix;
 uniform mat4 VMatrix;
+uniform mat4 PMatrix;
 
-varying vec3 normal0;
-varying vec2 texcoords0;
-varying vec3 position_w;
-varying vec3 position_c;
+out vec3 normal0;
+out vec2 texcoords0;
+out vec3 position_w;
+out vec3 position_c;
 
 void main() {
     // Passing variables to fragment shader

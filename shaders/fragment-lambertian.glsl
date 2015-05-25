@@ -1,4 +1,4 @@
-#version 120
+#version 150
 
 uniform vec3 light_position;
 uniform float light_intensity;
@@ -14,10 +14,13 @@ uniform sampler2D depthmap;
 
 uniform vec3 basecolor;
 
-varying vec3 normal0;
-varying vec2 texcoords0;
-varying vec3 position_w;
-varying vec3 position_c;
+in vec3 normal0;
+in vec2 texcoords0;
+in vec3 position_w;
+in vec3 position_c;
+
+out vec4 out_color;
+out vec4 out_normal;
 
 #define MAX_AMBIENT_LIGHTS 2
 #define MAX_DIRECTION_LIGHTS 2
@@ -152,11 +155,8 @@ void main(){
         diffuse += diffuse_intensity(spotlights[i], normal, position_w);
     }
 
-    // TODO think about another name for 'color'
-    color = ambient + diffuse;
-
-    gl_FragColor = clamp(vec4(color, 1), 0.0, 1.0);
+    out_color = clamp(vec4(ambient + diffuse, 1), 0.0, 1.0);
 
     // Apply some cheap noise
-    //gl_FragColor = gl_FragColor + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);
+    //out_color = out_color + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);
 }
