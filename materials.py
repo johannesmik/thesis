@@ -13,21 +13,27 @@ class BaseMaterial:
         self.textures['colormap'] = self.empty_texture(color="white")
 
         self.uniforms = {}
-        self.uniforms['basecolor'] = (np.array([1., 1., 1.]), 3)
+        self.uniforms['basecolor'] = np.array([1., 1., 1.])
 
     def put_up_uniforms(self, shader):
-        for uniform_name in self.uniforms:
-            uniformvalue, number_of_values = self.uniforms[uniform_name]
+        for uniform_name, uniform_value in self.uniforms.items():
             location = shader.locations.get(uniform_name, -1)
-            if number_of_values == 1:
-                glUniform1f(location, uniformvalue)
-            elif number_of_values == 2:
-                glUniform2f(location, *uniformvalue)
-            elif number_of_values == 3:
-                glUniform3f(location, *uniformvalue)
-            elif number_of_values == 4:
-                glUniform4f(location, *uniformvalue)
-            # print uniform_name, location
+            if type(uniform_value) is list:
+                uniform_value_len = len(uniform_value)
+            elif type(uniform_value) is np.ndarray:
+                uniform_value_len = uniform_value.size
+            elif type(uniform_value) is int or float:
+                uniform_value_len = 1
+
+            if uniform_value_len == 1:
+                glUniform1f(location, uniform_value)
+            elif uniform_value_len == 2:
+                glUniform2f(location, *uniform_value)
+            elif uniform_value_len == 3:
+                glUniform3f(location, *uniform_value)
+            elif uniform_value_len == 4:
+                glUniform4f(location, *uniform_value)
+            print uniform_name, location
 
     def empty_texture(self, color='white'):
         "Create a one-by-one pixel texture with a given color and return it's id"
@@ -52,17 +58,25 @@ class BaseMaterial:
 
     def add_normalmap(self, filename):
         self.add_texture('normalmap', filename)
-        self.uniforms['use_normalmap'] = (True, 1)
+        self.uniforms['use_normalmap'] = True
 
     def add_depthmap(self, filename):
         self.add_texture('depthmap', filename)
-        self.uniforms['use_depthmap'] = (True, 1)
+        self.uniforms['use_depthmap'] = True
 
+    # TODO make static, or let it use name instead of id and use id = self.textures[name]
     def overwrite_texture(self, id, imagebytes, width, height):
         ''' Overwrite the texture id with imagebytes '''
         glBindTexture(GL_TEXTURE_2D, id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imagebytes)
+
+    # TODO does not give correct result yet (called from reconstruction.py)
+    def overwrite_texture_bw(self, id, imagebytes, width, height):
+        ''' Overwrite the texture id with imagebytes '''
+        glBindTexture(GL_TEXTURE_2D, id)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, imagebytes)
 
     def add_texture(self, name, filename):
         im = Image.open(filename)
@@ -86,9 +100,15 @@ class BaseMaterial:
 
         for i, texture_name in enumerate(self.textures):
             id = self.textures[texture_name]
-            glActiveTexture(GL_TEXTURE0 + id)
+            if texture_name == 'colormap':
+                texture_unit = 0
+            elif texture_name == 'normalmap':
+                texture_unit = 1
+            elif texture_name == 'depthmap':
+                texture_unit = 2
+            glActiveTexture(GL_TEXTURE0 + texture_unit)
             glBindTexture(GL_TEXTURE_2D, id)
-            glUniform1i(shader.locations.get(texture_name, -1), id)
+            glUniform1i(shader.locations.get(texture_name, -1), texture_unit)
 
 class AmbientMaterial(BaseMaterial):
     pass
