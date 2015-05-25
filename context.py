@@ -320,7 +320,7 @@ if __name__ == '__main__':
     c = Context(width=200, height=200)
     c.print_opengl_info()
 
-    scene = scenes.exampleScene6()
+    scene = scenes.SpotLightExample()
     camera = cameras.PerspectiveCamera()
 
     # The Loop

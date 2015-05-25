@@ -42,11 +42,11 @@ class Minimize(object):
 
         if not scene:
             # Initialize Scene #TODO
-            self.scene = scenes.exampleScene7()
+                self.scene = scenes.NormalTexture(lighttype="point", material="lambertian")
         else:
             self.scene = scene
 
-        self.scene_depth = scenes.exampleScene9() # for depthmap rendering
+        self.scene_depth = scenes.DepthTexture(lighttype="point", material="materiala")
 
         self.maxIterations = maxIterations
 

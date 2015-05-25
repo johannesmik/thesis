@@ -139,3 +139,29 @@ class PerspectiveCamera2(Camera):
                         [0, 0, self.near + self.far, self.near * self.far],
                         [0, 0, -1, 0]])
         return np.dot(ortho, cam)
+
+class PerspectiveCamera3(Camera):
+
+    def __init__(self, name=None, position=None, rotation=None):
+        super(PerspectiveCamera3, self).__init__(name=name, position=position, rotation=rotation)
+
+        self.ox, self.oy = 50, 50
+        self.fx, self.fy = 1, 1
+        self.sx, self.sy = 100, 100
+
+    def reshape(self, width, height):
+        pass
+
+    @property
+    def projectionmatrix(self):
+        # TODO double check this projection matrix. Consult Ma et al, chapter 3.
+
+        pi = np.array([[1, 0, 0, 0],
+                       [0, 1, 0, 0],
+                       [0, 0, 1, 0]])
+
+        k = np.array([[self.fx * self.sx, 0, self.ox],
+                      [0, self.fy * self.sy, self.oy],
+                      [0, 0, 1]])
+
+        return np.dot(k, pi)

@@ -175,7 +175,7 @@ void main(){
     }
 
     out_color = clamp(vec4(ambient + diffuse, 1), 0.0, 1.0);
-    out_normal = clamp(vec4(normal, 1), 0.0, 1.0);
+    out_color = clamp(vec4(normal, 1), 0.0, 1.0);
 
     // Apply some cheap noise
     //gl_FragColor = gl_FragColor + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);
