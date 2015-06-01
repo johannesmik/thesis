@@ -126,6 +126,3 @@ class NormalMaterial(BaseMaterial):
 
 class DepthMaterial(BaseMaterial):
     pass
-
-class MaterialA(BaseMaterial):
-    pass

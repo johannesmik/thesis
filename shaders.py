@@ -35,9 +35,6 @@ class Shader:
         self.locations.update(self.attribute_locations)
         self.locations.update(self.uniform_locations)
 
-        # Binds the output variable to buffer 0
-        glBindFragDataLocation(self.program, 0, "out_color");
-        glBindFragDataLocation(self.program, 1, "out_normal");
 
 
 class ShaderLib:
@@ -68,7 +65,3 @@ class ShaderLib:
         self.lambertian = Shader('shaders/vertex.glsl', 'shaders/fragment-lambertian.glsl',
                             ['position', 'color', 'normal', 'texcoords'],
                             ['PMatrix', 'MMatrix', 'VMatrix',  'colormap', 'normalmap', 'depthmap', 'basecolor', 'use_normalmap'])
-
-        self.materiala = Shader('shaders/vertex.glsl', 'shaders/fragment-materiala.glsl',
-                            ['position', 'color', 'normal', 'texcoords'],
-                            ['PMatrix', 'MMatrix', 'VMatrix',  'colormap', 'normalmap', 'depthmap', 'basecolor', 'use_depthmap'])

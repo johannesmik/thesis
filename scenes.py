@@ -129,8 +129,8 @@ class DepthTexture(Scene):
 
         if material == "lambertian":
             square_material = materials.LambertianMaterial()
-        elif material == "materiala":
-            square_material = materials.MaterialA()
+        elif material == "normal":
+            square_material = materials.NormalMaterial()
 
         square_material.add_depthmap('images/sphere_depth.png')
         square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -1.5]), geometry=meshes.SquareGeometry(), material=square_material)
@@ -152,8 +152,8 @@ class NormalTexture(Scene):
 
         if material == "lambertian":
             square_material = materials.LambertianMaterial()
-        elif material == "materiala":
-            square_material = materials.MaterialA()
+        elif material == "normal":
+            square_material = materials.NormalMaterial()
 
         square_material.add_normalmap('images/texture_normal.png')
         square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -1.5]), geometry=meshes.SquareGeometry(), material=square_material)
