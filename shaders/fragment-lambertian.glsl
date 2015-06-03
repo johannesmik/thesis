@@ -76,9 +76,7 @@ vec3 diffuse_intensity(DirectionLight light, vec3 normal0){
     else
         direction = -light.direction;
 
-
-    vec3 intensity = dot(direction, normal0) * light.color.rgb;
-    return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
+    return dot(direction, normal0) * light.color.rgb;
 }
 
 vec3 diffuse_intensity(PointLight light, vec3 normal0, vec3 position){
