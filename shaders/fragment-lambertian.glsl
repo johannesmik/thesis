@@ -1,10 +1,5 @@
 #version 150
 
-uniform vec3 light_position;
-uniform float light_intensity;
-uniform bool light_isDirectional;
-uniform bool light_isPoint;
-
 uniform bool use_normalmap;
 uniform bool use_depthmap;
 
@@ -63,6 +58,10 @@ float rand(vec2 co){
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
+float attenuation(float falloff, float distance) {
+    return 1. / ( 1 + falloff * distance * distance);
+}
+
 vec3 ambient_intensity(vec3 basecolor, AmbientLight light){
     return basecolor *  light.color.rgb;
 }
@@ -77,7 +76,9 @@ vec3 diffuse_intensity(DirectionLight light, vec3 normal0){
     else
         direction = -light.direction;
 
-    return dot(direction, normal0) * light.color.rgb;
+
+    vec3 intensity = dot(direction, normal0) * light.color.rgb;
+    return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
 }
 
 vec3 diffuse_intensity(PointLight light, vec3 normal0, vec3 position){
@@ -88,15 +89,13 @@ vec3 diffuse_intensity(PointLight light, vec3 normal0, vec3 position){
     vec3 direction = - normalize(position - light.position);
 
     vec3 intensity = dot(direction, normal0) * light.color.rgb;
-    float attenuation = 1 / ( 1 + light.falloff * distance * distance);
-    return clamp(attenuation * intensity, 0, 1);
+    return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
 }
 
 vec3 diffuse_intensity(SpotLight light, vec3 normal0, vec3 position){
     /* The diffuse component (Lambertian) for SpotLight */
 
     // Check if angle is in
-
     float distance = length(position - light.position);
     vec3 direction = - normalize(position - light.position);
 
@@ -106,8 +105,7 @@ vec3 diffuse_intensity(SpotLight light, vec3 normal0, vec3 position){
         return vec3(0, 0, 0);
 
     vec3 intensity = dot(direction, normal0) * light.color.rgb;
-    float attenuation = 1 / ( 1 + light.falloff * distance * distance);
-    return clamp(attenuation * intensity, 0, 1);
+    return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
 }
 
 void main(){
@@ -121,7 +119,7 @@ void main(){
      normal = normalize(normal0);
     }
 
-    vec3 color = basecolor * texture2D(normalmap, texcoords0).rgb;
+    vec3 color = basecolor;
 
     /* Depthmap */
     if (use_depthmap) {
@@ -155,7 +153,7 @@ void main(){
         diffuse += diffuse_intensity(spotlights[i], normal, position_w);
     }
 
-    out_color = clamp(vec4(ambient + diffuse, 1), 0.0, 1.0);
+    out_color = clamp(vec4(color * (ambient + diffuse), 1), 0.0, 1.0);
 
     // Apply some cheap noise
     //out_color = out_color + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);
