@@ -53,20 +53,20 @@ struct SpotLight
 };
 uniform SpotLight spotlights[MAX_SPOT_LIGHTS];
 
-float rand(vec2 co){
+float rand(in vec2 co){
     /* This can be used for simple, and fast noise */
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
-float attenuation(float falloff, float distance) {
+float attenuation(in float falloff, in float distance) {
     return 1. / ( 1 + falloff * distance * distance);
 }
 
-vec3 ambient_intensity(vec3 basecolor, AmbientLight light){
+vec3 ambient_intensity(in vec3 basecolor, in AmbientLight light){
     return basecolor *  light.color.rgb;
 }
 
-vec3 diffuse_intensity(DirectionLight light, vec3 normal0){
+vec3 diffuse_intensity(in DirectionLight light, in vec3 normal0){
     /* The diffuse component (Lambertian) for DirectionLight */
 
     // Normalize the light direction if not a null-vector
@@ -79,7 +79,7 @@ vec3 diffuse_intensity(DirectionLight light, vec3 normal0){
     return dot(direction, normal0) * light.color.rgb;
 }
 
-vec3 diffuse_intensity(PointLight light, vec3 normal0, vec3 position){
+vec3 diffuse_intensity(in PointLight light, in vec3 normal0, in vec3 position){
     /* The diffuse component (Lambertian) for PointLight */
     // TODO: What happens if the PointLight is exactly on the point of the surface, ie distance=0
 
@@ -90,7 +90,7 @@ vec3 diffuse_intensity(PointLight light, vec3 normal0, vec3 position){
     return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
 }
 
-vec3 diffuse_intensity(SpotLight light, vec3 normal0, vec3 position){
+vec3 diffuse_intensity(in SpotLight light, in vec3 normal0, in vec3 position){
     /* The diffuse component (Lambertian) for SpotLight */
 
     // Check if angle is in
