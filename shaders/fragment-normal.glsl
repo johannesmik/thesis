@@ -38,28 +38,33 @@ void main(){
         float diff_y = 1.0 / texturesize.y;
         const float f = 10;
 
+        float correction = 1;
+        float correction_z = 1;
+
 
         // depthmap_factor: how far is the depthmap away from the camera?
         // TODO not used
         //float depthmap_factor = 5; // TODO define this in a uniform
 
         //position_c = position_c + textureLod(depthmap, texcoords0, 0).r;
-        vec3 vectorAC, vectorDB;
+        vec3 vectorDF, vectorHB;
+        float x, y, z;
+        vec2 coords = texcoords0;
+        coords = (coords - vec2(0.5, 0.5)) * 2;
 
-        float pointA_z = textureLod(depthmap, texcoords0 + vec2(-diff_x, 0), 0).r;
-        float pointC_z = textureLod(depthmap, texcoords0 + vec2(diff_x, 0), 0).r;
-        float x = (((texcoords0.x + diff_x) * pointC_z) - ((texcoords0.x - diff_x) * pointA_z) )/ f;
-        float z = pointC_z - pointA_z;
-        vectorAC = vec3(x, 0, z);
+        float pointD_z = - correction - textureLod(depthmap, texcoords0 + vec2(-diff_x, 0), 0).r;
+        float pointF_z = - correction - textureLod(depthmap, texcoords0 + vec2(diff_x, 0), 0).r;
+        x = (((coords.x + diff_x) * pointF_z) - ((coords.x - diff_x) * pointD_z) )/ f;
+        z = pointF_z - pointD_z;
+        vectorDF = vec3(x, 0, z);
 
-        float pointB_z = textureLod(depthmap, texcoords0 + vec2(0, diff_y), 0).r;
-        float pointD_z = textureLod(depthmap, texcoords0 + vec2(0, -diff_y), 0).r;
-        float y = (((texcoords0.y + diff_y) * pointB_z) - ((texcoords0.y - diff_y) * pointD_z) )/ f;
+        float pointB_z = - correction - textureLod(depthmap, texcoords0 + vec2(0, diff_y), 0).r;
+        float pointH_z = - correction - textureLod(depthmap, texcoords0 + vec2(0, -diff_y), 0).r;
+        y = (((coords.y + diff_y) * pointB_z) - ((coords.y - diff_y) * pointH_z) )/ f;
         z = pointB_z - pointD_z;
-        vectorDB = vec3(0, y, z);
+        vectorHB = vec3(0, y, z);
 
-        normal = normalize(cross(vectorAC, vectorDB));
-        normal.z = normal.z;
+        normal = normalize(cross(vectorDF, vectorHB));
 
         // Map range (-1, 1) to range (0, 1) when visualized in color
         normal = (normal + 1) / 2.;
@@ -69,5 +74,5 @@ void main(){
         normal = (normalize(normal0) + 1 ) / 2;
     }
     out_color = vec4(normal, 1);
-    out_color = vec4(diff_x, diff_y, 0, 1);
+    //out_color = vec4(diff_x, diff_y, 0, 1);
 }

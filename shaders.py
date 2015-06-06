@@ -59,9 +59,14 @@ class ShaderLib:
                             ['PMatrix', 'MMatrix', 'VMatrix'])
 
         self.normal = Shader('shaders/vertex.glsl', 'shaders/fragment-normal.glsl',
-                            ['position', 'normal'],
-                            ['PMatrix', 'MMatrix', 'VMatrix'])
+                            ['position', 'color', 'normal', 'texcoords'],
+                            ['PMatrix', 'MMatrix', 'VMatrix', 'colormap', 'normalmap', 'depthmap', 'basecolor', 'use_normalmap', 'use_depthmap'])
 
         self.lambertian = Shader('shaders/vertex.glsl', 'shaders/fragment-lambertian.glsl',
                             ['position', 'color', 'normal', 'texcoords'],
                             ['PMatrix', 'MMatrix', 'VMatrix',  'colormap', 'normalmap', 'depthmap', 'basecolor', 'use_normalmap'])
+
+        self.blinnphong = Shader('shaders/vertex.glsl', 'shaders/fragment-blinnphong.glsl',
+                            ['position', 'color', 'normal', 'texcoords'],
+                            ['PMatrix', 'MMatrix', 'VMatrix',  'colormap', 'normalmap', 'depthmap', 'basecolor',
+                             'use_normalmap', 'specularity', 'specular_color'])

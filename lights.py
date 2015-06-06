@@ -6,15 +6,18 @@ import numpy as np
 class Light(object):
     """ Baseclass for a light.
     """
+
+    counter = 0
+
     def __init__(self, color):
         self.color = color
         self.uniforms = {}
         self.lighttype = 'baselights'
 
-    def put_up_uniforms(self, shader, lightnumber):
+    def put_up_uniforms(self, shader):
         for uniform_name in self.uniforms:
             uniformvalue, number_of_values = self.uniforms[uniform_name]
-            location = glGetUniformLocation(shader.program, '%s[%i].%s' % (self.lighttype, lightnumber, uniform_name))
+            location = glGetUniformLocation(shader.program, '%s[%i].%s' % (self.lighttype, self.number, uniform_name))
             if number_of_values == 1:
                 glUniform1f(location, uniformvalue)
             elif number_of_values == 2:
@@ -37,6 +40,9 @@ class DirectionalLight(Light):
         self.uniforms['color'] = [color, 4]
         self.uniforms['direction'] = [ direction, 3]
 
+        self.number = DirectionalLight.counter
+        DirectionalLight.counter += 1
+
 class PointLight(Light):
     def __init__(self, position, color, falloff):
         self.lighttype = 'pointlights'
@@ -45,11 +51,17 @@ class PointLight(Light):
         self.uniforms['position'] = [position, 3]
         self.uniforms['falloff'] = [falloff, 1]
 
+        self.number = PointLight.counter
+        PointLight.counter += 1
+
 class AmbientLight(Light):
     def __init__(self, color):
         self.lighttype = 'ambientlights'
         self.uniforms = {}
-        self.uniforms['color'] = (color, 4)
+        self.uniforms['color'] = [color, 4]
+
+        self.number = AmbientLight.counter
+        AmbientLight.counter += 1
 
 class SpotLight(Light):
     def __init__(self, position, direction, cone_angle, color, falloff):
@@ -60,3 +72,6 @@ class SpotLight(Light):
         self.uniforms['direction'] = [direction, 3]
         self.uniforms['cone_angle'] = [cone_angle, 1]
         self.uniforms['falloff'] = [falloff, 1]
+
+        self.number = SpotLight.counter
+        SpotLight.counter += 1

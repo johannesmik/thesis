@@ -4,7 +4,7 @@ from OpenGL.GL import *
 from PIL import Image
 import numpy as np
 
-class BaseMaterial:
+class BaseMaterial(object):
 
     def __init__(self):
 
@@ -116,7 +116,13 @@ class LambertianMaterial(BaseMaterial):
     pass
 
 class BlinnPhongMaterial(BaseMaterial):
-    pass
+
+    def __init__(self, specularity=1.0, specular_color=np.array([1., 1., 1.])):
+
+        super(BlinnPhongMaterial, self).__init__()
+
+        self.uniforms['specularity'] = specularity
+        self.uniforms['specular_color'] = specular_color
 
 class BRDFMaterial(BaseMaterial):
     pass

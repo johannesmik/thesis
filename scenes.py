@@ -121,6 +121,9 @@ class FourSpheres(Scene):
         light = lights.PointLight(position=np.array([1.5, 0, -2]), color=np.array([1, 1, 1, 1]), falloff=1)
         self.addLight(light)
 
+        light = lights.AmbientLight(color=np.array([0.3, 0.3, 0.3, 1]))
+        self.addLight(light)
+
 class DepthTexture(Scene):
     ' One square with a depthmap on it '
     def __init__(self, lighttype="directional", material="lambertian"):
@@ -132,7 +135,7 @@ class DepthTexture(Scene):
         elif material == "normal":
             square_material = materials.NormalMaterial()
 
-        square_material.add_depthmap('images/sphere_depth.png')
+        square_material.add_depthmap('images/sphere_depth_small.png')
         square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -1.5]), geometry=meshes.SquareGeometry(), material=square_material)
         square.size = 1.5
 
