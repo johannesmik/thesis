@@ -55,6 +55,62 @@ class Geometry(object):
         self.indices = None
         self.material = None
 
+    def fromFile(self, filename):
+        """
+         Loads an obj file. Currently works with files exported from blender (check 'export normal' setting as well)
+
+         Adapted from http://www.nandnor.net/?p=86
+        """
+
+        # TODO this imports multiple normals (per face) as normals by vertex.
+        # Effectively reduces the number of normals by overwriting
+
+        verts = []
+        norms = []
+        vertsOut = []
+        normsOut = {}
+        indices = []
+        for line in open(filename, "r"):
+            vals = line.split()
+            if vals[0] == "v":
+                v = map(float, vals[1:4])
+                verts.append(v)
+            if vals[0] == "vn":
+                n = map(float, vals[1:4])
+                norms.append(n)
+            if vals[0] == "f":
+                # Triangles
+                if len(vals) == 4:
+                    for f in vals[1:]:
+                        w = f.split("/")
+                        normsOut[(int(w[2])-1)] = list(norms[int(w[2])-1])
+                        indices.append(int(w[0])-1)
+                # Quads
+                elif len(vals) == 5:
+                    indices_quad = []
+                    for f in vals[1:]:
+                        w = f.split("/")
+                        normsOut[(int(w[2])-1)] = list(norms[int(w[2])-1])
+                        indices_quad.append(int(w[0])-1)
+                    indices.extend([indices_quad[i] for i in [0,1,2,0,2,3]]) # Appends the quad as two triangles
+
+        self.vertices = vbo.VBO(np.array(verts, 'float32'),
+                                usage=GL_STATIC_DRAW)
+
+        self.colors = vbo.VBO(np.array([[1, 0, 1], [1, 0, 1], [1, 0, 1]], 'float32'),
+                              usage=GL_STATIC_DRAW)
+
+        self.texcoords = vbo.VBO(np.array([[0, 0]], 'float32'),
+                                 usage=GL_STATIC_DRAW)
+
+        self.normals = vbo.VBO(np.array(normsOut.values(), 'float32'),
+                                usage=GL_STATIC_DRAW)
+
+        self.indices = indices
+
+        return vertsOut, normsOut
+
+
 class TriangleGeometry(Geometry):
     """ Create a small triangle """
     def __init__(self):
