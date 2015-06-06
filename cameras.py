@@ -29,23 +29,17 @@ class Camera(object):
     def move_left(self, length):
         self.move_right(-length)
 
-        self.cached_viewmatrix = False
-
     def rotate_left(self, angle):
         self.rotation[1] += angle
-        self.cached_viewmatrix = False
 
     def rotate_right(self, angle):
         self.rotation[1] -= angle
-        self.cached_viewmatrix = False
 
     def rotate_up(self, angle):
         self.rotation[0] -= angle
-        self.cached_viewmatrix = False
 
     def rotate_down(self, angle):
         self.rotation[0] += angle
-        self.cached_viewmatrix = False
 
     @property
     def translationmatrix(self):

@@ -3,11 +3,8 @@ __author__ = 'johannes'
 import numpy as np
 import pcl
 from scipy import misc
-import cProfile
-from skimage.filters import sobel, sobel_h, sobel_v, median, scharr_h, scharr_v
+from skimage.filters import sobel_h, sobel_v
 import matplotlib.pyplot as plt
-
-import reconstruction, context
 
 ' Here I want to test different methods to calculate the normal map from a depth map '
 
@@ -121,51 +118,51 @@ if __name__ == '__main__':
 
     # Sphere from OpenGL context
 
-    width, height = 600, 512
-    glcontext = context.Context(width=width, height=height, show_framerate=True)
-
-    intensity2, depth2 = reconstruction.sphere(glcontext)
-
-    cProfile.run("normal_pcl2 = normals_from_depth_pcl(depth2)")
-    normal_pcl2 = ((normal_pcl2 + 1) / 2.) * 255
-
-    cProfile.run("normal_sobel2 = normals_from_depth_sobel2(depth2)")
-    normal_sobel2 = ((normal_sobel2 + 1) / 2.) * 255
-
-    plt.subplot(3,3,4)
-    plt.imshow(depth2, cmap=plt.cm.gray, interpolation='nearest', vmin=0, vmax=255)
-    plt.colorbar()
-
-    plt.subplot(3,3,5)
-    plt.imshow(normal_pcl2.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
-    plt.colorbar()
-
-    plt.subplot(3,3,6)
-    plt.imshow(normal_sobel2.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
-    plt.colorbar()
+    # width, height = 600, 512
+    # glcontext = context.Context(width=width, height=height, show_framerate=True)
+    #
+    # intensity2, depth2 = reconstruction.sphere(glcontext)
+    #
+    # cProfile.run("normal_pcl2 = normals_from_depth_pcl(depth2)")
+    # normal_pcl2 = ((normal_pcl2 + 1) / 2.) * 255
+    #
+    # cProfile.run("normal_sobel2 = normals_from_depth_sobel2(depth2)")
+    # normal_sobel2 = ((normal_sobel2 + 1) / 2.) * 255
+    #
+    # plt.subplot(3,3,4)
+    # plt.imshow(depth2, cmap=plt.cm.gray, interpolation='nearest', vmin=0, vmax=255)
+    # plt.colorbar()
+    #
+    # plt.subplot(3,3,5)
+    # plt.imshow(normal_pcl2.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
+    # plt.colorbar()
+    #
+    # plt.subplot(3,3,6)
+    # plt.imshow(normal_sobel2.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
+    # plt.colorbar()
 
 
     # Squares
 
-    intensity3, depth3 = reconstruction.squares(glcontext)
-
-    normal_pcl3 = normals_from_depth_pcl(depth3)
-    normal_pcl3 = ((normal_pcl3 + 1) / 2.) * 255
-
-    normal_sobel3 = normals_from_depth_sobel2(depth3)
-    normal_sobel3 = ((normal_sobel3 + 1) / 2.) * 255
-
-    plt.subplot(3,3,7)
-    plt.imshow(depth3, cmap=plt.cm.gray, interpolation='nearest', vmin=0, vmax=255)
-    plt.colorbar()
-
-    plt.subplot(3,3,8)
-    plt.imshow(normal_pcl3.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
-    plt.colorbar()
-
-    plt.subplot(3,3,9)
-    plt.imshow(normal_sobel3.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
-    plt.colorbar()
+    # intensity3, depth3 = reconstruction.squares(glcontext)
+    #
+    # normal_pcl3 = normals_from_depth_pcl(depth3)
+    # normal_pcl3 = ((normal_pcl3 + 1) / 2.) * 255
+    #
+    # normal_sobel3 = normals_from_depth_sobel2(depth3)
+    # normal_sobel3 = ((normal_sobel3 + 1) / 2.) * 255
+    #
+    # plt.subplot(3,3,7)
+    # plt.imshow(depth3, cmap=plt.cm.gray, interpolation='nearest', vmin=0, vmax=255)
+    # plt.colorbar()
+    #
+    # plt.subplot(3,3,8)
+    # plt.imshow(normal_pcl3.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
+    # plt.colorbar()
+    #
+    # plt.subplot(3,3,9)
+    # plt.imshow(normal_sobel3.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
+    # plt.colorbar()
 
     plt.savefig('results/depth_to_normal.png', dpi=300)
     plt.show()

@@ -46,7 +46,7 @@ class Minimize(object):
         else:
             self.scene = scene
 
-        self.scene_depth = scenes.DepthTexture(lighttype="point", material="materiala")
+        self.scene_depth = scenes.DepthTexture(lighttype="point", material="normal")
 
         self.maxIterations = maxIterations
 
