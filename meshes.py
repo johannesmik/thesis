@@ -55,20 +55,17 @@ class Geometry(object):
         self.indices = None
         self.material = None
 
-    def fromFile(self, filename):
+    def fromObjFile(self, filename):
         """
          Loads an obj file. Currently works with files exported from blender (check 'export normal' setting as well)
 
          Adapted from http://www.nandnor.net/?p=86
         """
 
-        # TODO this imports multiple normals (per face) as normals by vertex.
-        # Effectively reduces the number of normals by overwriting
-
         verts = []
         norms = []
         vertsOut = []
-        normsOut = {}
+        normsOut = []
         indices = []
         for line in open(filename, "r"):
             vals = line.split()
@@ -79,22 +76,23 @@ class Geometry(object):
                 n = map(float, vals[1:4])
                 norms.append(n)
             if vals[0] == "f":
+                current_index = len(vertsOut)
                 # Triangles
                 if len(vals) == 4:
                     for f in vals[1:]:
                         w = f.split("/")
-                        normsOut[(int(w[2])-1)] = list(norms[int(w[2])-1])
-                        indices.append(int(w[0])-1)
+                        vertsOut.append(list(verts[int(w[0])-1]))
+                        normsOut.append(list(norms[int(w[2])-1]))
+                    indices.extend([current_index + i for i in [0,1,2]])
                 # Quads
                 elif len(vals) == 5:
-                    indices_quad = []
                     for f in vals[1:]:
                         w = f.split("/")
-                        normsOut[(int(w[2])-1)] = list(norms[int(w[2])-1])
-                        indices_quad.append(int(w[0])-1)
-                    indices.extend([indices_quad[i] for i in [0,1,2,0,2,3]]) # Appends the quad as two triangles
+                        vertsOut.append(list(verts[int(w[0])-1]))
+                        normsOut.append(list(norms[int(w[2])-1]))
+                    indices.extend([current_index + i for i in [0,1,2,0,2,3]]) # Appends the quad as two
 
-        self.vertices = vbo.VBO(np.array(verts, 'float32'),
+        self.vertices = vbo.VBO(np.array(vertsOut, 'float32'),
                                 usage=GL_STATIC_DRAW)
 
         self.colors = vbo.VBO(np.array([[1, 0, 1], [1, 0, 1], [1, 0, 1]], 'float32'),
@@ -103,7 +101,7 @@ class Geometry(object):
         self.texcoords = vbo.VBO(np.array([[0, 0]], 'float32'),
                                  usage=GL_STATIC_DRAW)
 
-        self.normals = vbo.VBO(np.array(normsOut.values(), 'float32'),
+        self.normals = vbo.VBO(np.array(normsOut, 'float32'),
                                 usage=GL_STATIC_DRAW)
 
         self.indices = indices
