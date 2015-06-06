@@ -234,12 +234,6 @@ class Monkey(Scene):
         monkey = meshes.Mesh(name='Suzanne', position=np.array([0, 0, -3]), geometry=monkey_geometry, material=monkey_material)
         self.addMesh(monkey)
 
-        sphere_geometry = meshes.IcosphereGeometry()
-        sphere_material = materials.LambertianMaterial()
-        sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry, material=sphere_material)
-        sphere.size = 0.1
-        #self.addMesh(sphere)
-
         light = lights.PointLight(position=np.array([0, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.5)
         self.addLight(light)
 
