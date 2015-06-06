@@ -52,14 +52,14 @@ class Context:
                 shader = self.shaderlib.normal
             elif isinstance(mesh.material, materials.LambertianMaterial):
                 shader = self.shaderlib.lambertian
-            elif isinstance(mesh.material, materials.MaterialA):
-                shader = self.shaderlib.materiala
+            elif isinstance(mesh.material, materials.BlinnPhongMaterial):
+                shader = self.shaderlib.blinnphong
 
             glUseProgram(shader.program)
 
             # Get all lights and bind them up the program shader
             for number, light in enumerate(scene.lights):
-                light.put_up_uniforms(shader, number)
+                light.put_up_uniforms(shader)
 
             # Put up material uniforms and textures
             mesh.material.put_up_uniforms(shader)

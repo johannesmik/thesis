@@ -54,6 +54,7 @@ class BaseMaterial(object):
 
     def add_colormap(self, filename):
         self.add_texture('colormap', filename)
+        self.uniforms['use_colormap'] = True
 
     def add_normalmap(self, filename):
         self.add_texture('normalmap', filename)

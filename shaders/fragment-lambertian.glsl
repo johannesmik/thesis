@@ -1,5 +1,6 @@
 #version 150
 
+uniform bool use_colormap;
 uniform bool use_normalmap;
 uniform bool use_depthmap;
 
@@ -102,7 +103,9 @@ vec3 diffuse_intensity(in SpotLight light, in vec3 normal0, in vec3 position){
 
 void main(){
 
+    vec3 color;
     vec3 normal;
+
     if (use_normalmap) {
      // Also map (0, 1) range to (-1, 1)
      normal = normalize((texture2D(normalmap, texcoords0).rgb * 2 - 1) * texture2D(normalmap, texcoords0).a);
@@ -111,7 +114,12 @@ void main(){
      normal = normalize(normal0);
     }
 
-    vec3 color = basecolor;
+    if (use_colormap) {
+        color = texture2D(normalmap, texcoords0).rgb;
+    }
+    else {
+        color = basecolor;
+    }
 
     /* Depthmap */
     if (use_depthmap) {

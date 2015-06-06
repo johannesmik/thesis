@@ -42,6 +42,8 @@ class PointCloud(core.Object3D):
         # Todo implement this
         pass
 
+# Todo: self.colors is not used in the shaders?
+# Delete in the shader, or delete here? Alternative is using the materials basecolor
 class Geometry(object):
     def __init__(self):
         # To be initialized in the subclasses
@@ -58,56 +60,53 @@ class Geometry(object):
     def fromObjFile(self, filename):
         """
          Loads an obj file. Currently works with files exported from blender (check 'export normal' setting as well)
+         Vertices are not 'reused' here, that means one vertex belongs to exactly one face. Normally, vertices are reused,
+         often one vertex belongs to one or more faces. We don't do this here because the obj file generally doesn't
+         describe one normal per vertice, but instead one normal per vector per face, So the normal on the vertex can be different,
+         depending on which face it belongs to.
+
+         Overwrites vertices, texcoords, normals, indices
 
          Adapted from http://www.nandnor.net/?p=86
         """
 
-        verts = []
-        norms = []
-        vertsOut = []
-        normsOut = []
+        verts, texcoords, norms = [], [], []
+        vertsOut, texcoordsOut, normsOut = [], [], []
         indices = []
+
         for line in open(filename, "r"):
             vals = line.split()
             if vals[0] == "v":
-                v = map(float, vals[1:4])
-                verts.append(v)
+                verts.append([float(v) for v in vals[1:4]])
             if vals[0] == "vn":
-                n = map(float, vals[1:4])
-                norms.append(n)
+                norms.append([float(v) for v in vals[1:4]])
+            if vals[0] == "vt":
+                texcoords.append([float(v) for v in vals[1:3]])
             if vals[0] == "f":
                 current_index = len(vertsOut)
                 # Triangles
                 if len(vals) == 4:
                     for f in vals[1:]:
                         w = f.split("/")
-                        vertsOut.append(list(verts[int(w[0])-1]))
-                        normsOut.append(list(norms[int(w[2])-1]))
+                        if len(w) > 0 and w[0] is not '': vertsOut.append(list(verts[int(w[0])-1]))
+                        if len(w) > 1 and w[1] is not '': texcoordsOut.append(list(texcoords[int(w[1])-1]))
+                        if len(w) > 2 and w[2] is not '': normsOut.append(list(norms[int(w[2])-1]))
                     indices.extend([current_index + i for i in [0,1,2]])
                 # Quads
                 elif len(vals) == 5:
                     for f in vals[1:]:
                         w = f.split("/")
-                        vertsOut.append(list(verts[int(w[0])-1]))
-                        normsOut.append(list(norms[int(w[2])-1]))
+                        print 'f', f
+                        print 'w', w
+                        if len(w) > 0 and w[0] is not '': vertsOut.append(list(verts[int(w[0])-1]))
+                        if len(w) > 1 and w[1] is not '': texcoordsOut.append(list(texcoords[int(w[1])-1]))
+                        if len(w) > 2 and w[2] is not '': normsOut.append(list(norms[int(w[2])-1]))
                     indices.extend([current_index + i for i in [0,1,2,0,2,3]]) # Appends the quad as two
 
-        self.vertices = vbo.VBO(np.array(vertsOut, 'float32'),
-                                usage=GL_STATIC_DRAW)
-
-        self.colors = vbo.VBO(np.array([[1, 0, 1], [1, 0, 1], [1, 0, 1]], 'float32'),
-                              usage=GL_STATIC_DRAW)
-
-        self.texcoords = vbo.VBO(np.array([[0, 0]], 'float32'),
-                                 usage=GL_STATIC_DRAW)
-
-        self.normals = vbo.VBO(np.array(normsOut, 'float32'),
-                                usage=GL_STATIC_DRAW)
-
+        self.vertices = vbo.VBO(np.array(vertsOut, 'float32'), usage=GL_STATIC_DRAW)
+        self.texcoords = vbo.VBO(np.array(texcoordsOut, 'float32'), usage=GL_STATIC_DRAW)
+        self.normals = vbo.VBO(np.array(normsOut, 'float32'), usage=GL_STATIC_DRAW)
         self.indices = indices
-
-        return vertsOut, normsOut
-
 
 class TriangleGeometry(Geometry):
     """ Create a small triangle """
