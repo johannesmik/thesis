@@ -6,11 +6,11 @@ class Camera(object):
     """
       Camera baseclass
     """
-    def __init__(self, name=None, position=None, rotation=None):
+    def __init__(self, name="Camera", position=None, rotation=None):
         """
         A simple camera. You can change (XYZ) position and (XYZ) rotation.
         """
-        self.name = name if not None else "Unnamed Camera"
+        self.name = name
 
         self.position = position if isinstance(position, np.ndarray) else np.array([0, 0, 0], 'float')
 

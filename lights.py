@@ -13,6 +13,7 @@ class Light(object):
         self.color = color
         self.uniforms = {}
         self.lighttype = 'baselights'
+        self.name = "Light"
 
     def put_up_uniforms(self, shader):
         for uniform_name in self.uniforms:
@@ -29,8 +30,9 @@ class Light(object):
 
 class DirectionalLight(Light):
 
-    def __init__(self, position=None, color=None, falloff=None, direction=None):
+    def __init__(self, name='Light', position=None, color=None, falloff=None, direction=None):
         self.lighttype = 'directionlights'
+        self.name = name
         self.position = position
         self.color = color
         self.falloff = falloff
@@ -44,8 +46,9 @@ class DirectionalLight(Light):
         DirectionalLight.counter += 1
 
 class PointLight(Light):
-    def __init__(self, position, color, falloff):
+    def __init__(self, position, color, falloff, name='Light'):
         self.lighttype = 'pointlights'
+        self.name = 'Light'
         self.uniforms = {}
         self.uniforms['color'] = [color, 4]
         self.uniforms['position'] = [position, 3]
@@ -55,8 +58,9 @@ class PointLight(Light):
         PointLight.counter += 1
 
 class AmbientLight(Light):
-    def __init__(self, color):
+    def __init__(self, color, name='Light'):
         self.lighttype = 'ambientlights'
+        self.name = name
         self.uniforms = {}
         self.uniforms['color'] = [color, 4]
 
@@ -64,8 +68,9 @@ class AmbientLight(Light):
         AmbientLight.counter += 1
 
 class SpotLight(Light):
-    def __init__(self, position, direction, cone_angle, color, falloff):
+    def __init__(self, position, direction, cone_angle, color, falloff, name='Light',):
         self.lighttype = 'spotlights'
+        self.name = name
         self.uniforms = {}
         self.uniforms['color'] = [color, 4]
         self.uniforms['position'] = [position, 3]

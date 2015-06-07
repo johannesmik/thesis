@@ -249,7 +249,9 @@ class Context:
             camera.rotate_down(0.05)
 
         if event.key.keysym.sym == SDLK_y:
-            scene.lights[0].uniforms['position'][0] = 0.1 + scene.lights[0].uniforms['position'][0]
+            light = scene.get_object('Light')
+            light.uniforms['position'][0] = 0.1 + light.uniforms['position'][0]
+            print light.uniforms['position'][0]
             print scene.lights[0].uniforms['position'][0]
 
         if event.key.keysym.sym == SDLK_t:
@@ -321,6 +323,7 @@ if __name__ == '__main__':
     c.print_opengl_info()
 
     scene = scenes.SpotLightExample()
+    #scene = scenes.Monkey()
     camera = cameras.PerspectiveCamera()
 
     # The Loop

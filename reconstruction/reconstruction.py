@@ -324,15 +324,15 @@ def sphere(glcontext):
     sphere_geometry = meshes.IcosphereGeometry(subdivisions=4)
     sphere_material = materials.LambertianMaterial()
     sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry, material=sphere_material)
-    scene.addMesh(sphere)
+    scene.add(sphere)
 
     square_material = materials.LambertianMaterial()
     square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(), material=square_material)
     square.size = 3
-    scene.addMesh(square)
+    scene.add(square)
 
     light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
-    scene.addLight(light)
+    scene.add(light)
 
     camera = cameras.PerspectiveCamera()
 
@@ -355,16 +355,16 @@ def squares(glcontext):
     square_material = materials.LambertianMaterial()
     square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(), material=square_material)
     square.size = 3
-    scene.addMesh(square)
+    scene.add(square)
 
     square2 = meshes.Mesh(name='Square 2', position=np.array([0, 0, -2.5]), geometry=meshes.SquareGeometry(), material=square_material)
-    scene.addMesh(square2)
+    scene.add(square2)
 
     square3 = meshes.Mesh(name='Square 3', position=np.array([1, -1, -2.4]), geometry=meshes.SquareGeometry(), material=square_material)
-    scene.addMesh(square3)
+    scene.add(square3)
 
     light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
-    scene.addLight(light)
+    scene.add(light)
 
     camera = cameras.PerspectiveCamera()
 
