@@ -258,13 +258,35 @@ class Monkey(Scene):
         monkey_geometry = meshes.ObjectFile('./assets/suzanne.obj')
         monkey_material = materials.BlinnPhongMaterial()
         monkey_material.add_colormap("./assets/suzanne-texture.png")
-        monkey = meshes.Mesh(name='Suzanne', position=np.array([0, 0, -3]), geometry=monkey_geometry, material=monkey_material)
+        monkey = meshes.Mesh(name='Suzanne', position=np.array([0, 0, -2]), geometry=monkey_geometry, material=monkey_material)
         self.add(monkey)
 
         light = lights.PointLight(position=np.array([0, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.5)
         self.add(light)
 
         light = lights.PointLight(position=np.array([1.5, 4, -2]), color=np.array([1, 1, 1, 1]), falloff=0.5)
+        self.add(light)
+
+        light = lights.AmbientLight(color=np.array([0.3, 0.3, 0.3, 1]))
+        self.add(light)
+
+
+class Face(Scene):
+
+    def __init__(self):
+        super(Face, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+
+        # Model from 'TurboSquid'
+        face_geometry = meshes.ObjectFile('./assets/humanface.obj')
+        face_material = materials.BlinnPhongMaterial()
+        face_material.add_colormap("./assets/humanface-texture.png")
+        face = meshes.Mesh(name='Face', position=np.array([0, 0, -2]), geometry=face_geometry, material=face_material)
+        self.add(face)
+
+        light = lights.PointLight(position=np.array([0, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.5)
+        self.add(light)
+
+        light = lights.PointLight(position=np.array([1.5, 2, -2]), color=np.array([1, 1, 1, 1]), falloff=0.5)
         self.add(light)
 
         light = lights.AmbientLight(color=np.array([0.3, 0.3, 0.3, 1]))
