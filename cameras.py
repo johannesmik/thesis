@@ -108,31 +108,30 @@ class PerspectiveCamera2(Camera):
     """
     Use another Projection Matrix, such that there is a linear relationship between Z (world) and z_c (clip)
     """
-    def __init__(self, name=None, position=None, rotation=None):
+    def __init__(self, name=None, width=None, height=None, position=None, rotation=None):
         super(PerspectiveCamera2, self).__init__(name=name, position=position, rotation=rotation)
 
-        self.ox, self.oy = 0, 0
-        self.fx, self.fy = 1, 1
-        self.right, self.top = 1., 1.
+        # For the Kinect depth Image
+        self.fx = 368.096588
+        self.fy = 368.096588
+        self.ox = 261.696594
+        self.oy = 202.522202
+        self.near, self.far = 0.3, 10.
 
-        self.near, self.far = 1, 5.
+        self.right = (512 * self.near) / (2 * self.fx)
+        self.top = (424 * self.near) / (2 * self.fy)
 
     def reshape(self, width, height):
-        aspect = float(height) / width
-        self.top = aspect
+        return
+        self.right = (512 * self.near) / (2 * self.fx)
+        self.top = (424 * self.near) / (2 * self.fy)
 
     @property
     def projectionmatrix(self):
-        # TODO double check this projection matrix. Consult Ma et al, chapter 3.
-        ortho = np.array([[1. / self.right, 0, 0, 0],
-                          [0, 1. / self.top, 0, 0],
-                          [0, 0, -2. / (self.far - self.near), - (self.far + self.near) / (self.far - self.near)],
-                          [0, 0, 0, 1]])
-        cam = np.array([[self.fx, 0, self.ox, 0],
-                        [0, self.fy, self.oy, 0],
-                        [0, 0, self.near + self.far, self.near * self.far],
-                        [0, 0, -1, 0]])
-        return np.dot(ortho, cam)
+        return np.array([[self.near / self.right, 0, 0, 0],
+                         [0, self.near/self.top, 0 , 0],
+                         [0, 0, -(self.far+self.near)/(self.far-self.near), -2*self.far*self.near/(self.far - self.near)],
+                         [0, 0, -1, 0]])
 
 class PerspectiveCamera3(Camera):
 
