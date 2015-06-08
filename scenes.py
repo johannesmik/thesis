@@ -255,8 +255,7 @@ class Monkey(Scene):
     def __init__(self):
         super(Monkey, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
 
-        monkey_geometry = meshes.Geometry()
-        monkey_geometry.fromObjFile("./assets/suzanne.obj")
+        monkey_geometry = meshes.ObjectFile('./assets/suzanne.obj')
         monkey_material = materials.BlinnPhongMaterial()
         monkey_material.add_colormap("./assets/suzanne-texture.png")
         monkey = meshes.Mesh(name='Suzanne', position=np.array([0, 0, -3]), geometry=monkey_geometry, material=monkey_material)

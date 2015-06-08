@@ -57,7 +57,9 @@ class Geometry(object):
         self.indices = None
         self.material = None
 
-    def fromObjFile(self, filename):
+
+class ObjectFile(Geometry):
+    def __init__(self, filename):
         """
          Loads an obj file. Currently works with files exported from blender (check 'export normal' setting as well)
          Vertices are not 'reused' here, that means one vertex belongs to exactly one face. Normally, vertices are reused,
@@ -69,6 +71,7 @@ class Geometry(object):
 
          Adapted from http://www.nandnor.net/?p=86
         """
+        super(ObjectFile, self).__init__()
 
         verts, texcoords, norms = [], [], []
         vertsOut, texcoordsOut, normsOut = [], [], []
@@ -96,8 +99,6 @@ class Geometry(object):
                 elif len(vals) == 5:
                     for f in vals[1:]:
                         w = f.split("/")
-                        print 'f', f
-                        print 'w', w
                         if len(w) > 0 and w[0] is not '': vertsOut.append(list(verts[int(w[0])-1]))
                         if len(w) > 1 and w[1] is not '': texcoordsOut.append(list(texcoords[int(w[1])-1]))
                         if len(w) > 2 and w[2] is not '': normsOut.append(list(norms[int(w[2])-1]))
