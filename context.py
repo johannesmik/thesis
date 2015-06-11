@@ -57,6 +57,9 @@ class Context:
 
             glUseProgram(shader.program)
 
+            # Bind the camera up the program shader
+            #TODO
+
             # Get all lights and bind them up the program shader
             for number, light in enumerate(scene.lights):
                 light.put_up_uniforms(shader)
@@ -136,13 +139,21 @@ class Context:
             sys.exit()
 
         self.fbo = glGenFramebuffers(1)
-        self.rbo = glGenRenderbuffers(1)
+        self.rbo, self.rbo_depth = glGenRenderbuffers(2)
         glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
+
+        # Setup Color Renderbuffer
         glBindRenderbuffer(GL_RENDERBUFFER, self.rbo)
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, self.width, self.height)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB32F, self.width, self.height)
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, self.rbo)
+        # Setup Depth Renderbuffer
+        glBindRenderbuffer(GL_RENDERBUFFER, self.rbo_depth)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, self.width, self.height)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, self.rbo_depth)
+
         glBindRenderbuffer(GL_RENDERBUFFER, 0)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
 
     def init_sdl(self):
         SDL_Init(SDL_INIT_EVERYTHING)
@@ -195,16 +206,11 @@ class Context:
         """
         Takes a screenshot of the current view.
 
-        :param mode: 'color', 'depth', or 'normal'
-        :type mode: String
         :param filename: Filename where screenshot is saved
         :type filename: String
         :return: None
         """
 
-        # Draw to renderbuffer
-        # TODO bind to framebuffer when renderbuffer does correct depth testing
-        #glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
         self._render(scene, camera)
 
         buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
@@ -216,7 +222,35 @@ class Context:
         print "saved screenshot as '%s'" % (filename)
 
         # Clean up
-        #glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glBindRenderbuffer(GL_RENDERBUFFER, 0)
+
+    def screenshot_bw(self, scene, camera, filename):
+        """
+        32 bit float black and white screenshot of the current view.
+
+        :param filename: Filename where screenshot is saved
+        :type filename: String
+        :return: None
+        """
+
+        # Draw to renderbuffer
+        glCheckFramebufferStatus(GL_FRAMEBUFFER)
+        glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
+        glBindRenderbuffer(GL_RENDERBUFFER, self.rbo)
+        self.render(scene, camera)
+        buffer = glReadPixels(0, 0, self.width, self.height, GL_RED, GL_FLOAT)
+        image = Image.frombytes(mode="F", size=(self.width, self.height), data=buffer)
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        with open(filename, 'w') as f:
+            image.save(f)
+
+        print "saved 32bit bw screenshot as '%s'" % (filename)
+
+        # Clean up
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glBindRenderbuffer(GL_RENDERBUFFER, 0)
+
 
     def keyPressed(self, event, scene, camera):
         ''' Handles the event when a key is pressed. '''
@@ -271,6 +305,9 @@ class Context:
         if event.key.keysym.sym == SDLK_f:
             self.screenshot(scene, camera, 'images/screen_color.png')
 
+        if event.key.keysym.sym == SDLK_g:
+            self.screenshot_bw(scene, camera, 'images/screen_bw.tiff')
+
         if event.key.keysym.sym == SDLK_p:
             print "Debug info (Key g)"
             print ""
@@ -288,7 +325,9 @@ class Context:
 
         # Resize Renderbuffer object
         glBindRenderbuffer(GL_RENDERBUFFER, self.rbo)
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, self.width, self.height)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB32F, self.width, self.height)
+        glBindRenderbuffer(GL_RENDERBUFFER, self.rbo_depth)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, self.width, self.height)
         glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
     def sdl_control(self, scene, camera):
@@ -319,12 +358,13 @@ class Context:
 if __name__ == '__main__':
 
     # Create the context
-    c = Context(width=200, height=200)
+    width = 200
+    height = 200
+    c = Context(width=width, height=height, show_framerate=True)
     c.print_opengl_info()
 
-    scene = scenes.SpotLightExample()
-    #scene = scenes.Monkey()
-    camera = cameras.PerspectiveCamera()
+    scene = scenes.DepthTexture(material="normal")
+    camera = cameras.PerspectiveCamera2()
 
     # The Loop
     running = True

@@ -10,5 +10,6 @@ out vec4 out_color;
 
 void main(){
     float color = gl_FragCoord.z;
-    out_color = vec4(color, color, color, 1);
+    color = - position_c.z / 10.;
+    out_color = vec4(color, color, color, 0);
 }

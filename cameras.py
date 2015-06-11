@@ -116,7 +116,7 @@ class PerspectiveCamera2(Camera):
         self.fy = 368.096588
         self.ox = 261.696594
         self.oy = 202.522202
-        self.near, self.far = 0.3, 10.
+        self.near, self.far = 0.4, 8.
 
         self.right = (512 * self.near) / (2 * self.fx)
         self.top = (424 * self.near) / (2 * self.fy)

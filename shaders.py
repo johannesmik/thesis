@@ -50,7 +50,7 @@ class ShaderLib:
     """
     def __init__(self):
 
-        self.ambient = Shader('shaders/vertex.glsl', 'shaders/fragment-ambient.glsl',
+        self.ambient = Shader('./shaders/vertex.glsl', './shaders/fragment-ambient.glsl',
                               ['position', 'texcoords'],
                               ['PMatrix', 'MMatrix', 'VMatrix'])
 
