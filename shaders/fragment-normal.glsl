@@ -81,5 +81,5 @@ void main(){
     }
 
     out_color = vec4(normal, 1);
-    //out_color = vec4(diff_x, diff_y, 0, 1);
+    //out_color = vec4(textureLod(depthmap, texcoords0, 0).rgb, 1);
 }

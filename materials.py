@@ -60,7 +60,7 @@ class BaseMaterial(object):
         self.uniforms['use_normalmap'] = True
 
     def add_depthmap(self, filename):
-        self.add_texture('depthmap', filename)
+        self.add_texture('depthmap', filename, repeat_s=False, repeat_t=False)
         self.uniforms['use_depthmap'] = True
 
     def overwrite_texture(self, name, imagebytes, width, height):
@@ -77,19 +77,34 @@ class BaseMaterial(object):
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, imagebytes)
 
-    def add_texture(self, name, filename):
+    def add_texture(self, name, filename, repeat_s=True, repeat_t=True):
+        gl_texture_format = GL_RGBA
+        gl_format = GL_RGBA
+        gl_type = GL_UNSIGNED_BYTE
+
         im = Image.open(filename)
         im = im.transpose(Image.FLIP_TOP_BOTTOM)
+
+        if im.mode == 'F':
+            print "mode is F"
+            gl_texture_format = GL_RGB32F
+            gl_format = GL_RED
+            gl_type = GL_FLOAT
+
+
         ix, iy, imagebytes = im.size[0], im.size[1], im.tobytes("raw")
         print "opened", filename, ix, iy
         texture_id = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, texture_id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, imagebytes)
+        glTexImage2D(GL_TEXTURE_2D, 0, gl_texture_format, ix, iy, 0, gl_format, gl_type, imagebytes)
+
+        wrap_s = GL_REPEAT if repeat_s else GL_CLAMP
+        wrap_t = GL_REPEAT if repeat_t else GL_CLAMP
 
         glEnable(GL_TEXTURE_2D)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_t)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
