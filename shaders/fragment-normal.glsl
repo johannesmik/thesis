@@ -22,6 +22,32 @@ in vec3 position_c;
 layout(location = 0) out vec4 out_color;
 layout(location = 1) out vec4 out_normal;
 
+
+vec3 from_texture_to_camera(in vec2 texture_coords, in sampler2D depthmap){
+
+  // Hard coded camera params
+  const float fx = 368.096588;
+  const float fy = 368.096588;
+  const float ox = 261.696594;
+  const float oy = 202.522202;
+  const float correction = 10;
+  const int W = 512;
+  const int H = 424;
+
+  float z = - textureLod(depthmap, texture_coords, 0).r * correction;
+
+  // From Texture to Pixel Coordinates
+  float xs = texture_coords.x * W;
+  float ys = - texture_coords.y * H + H;
+
+  // From Pixel to Camera Coordinates
+  float x = -z * (xs - ox) / fx;
+  float y = - (-z * (ys - oy) / fy);
+
+  // TODO why -z?
+  return vec3(x, y, z);
+}
+
 void main(){
 
     vec3 normal;
@@ -29,50 +55,31 @@ void main(){
     /* Use Depthmap */
     /* Calculate the normals from the depthmap using cross products */
     /* Overwrites normal */
-
+    vec3 pointD, pointF, pointH, pointB;
 
     if (use_depthmap) {
 
         vec2  texturesize = textureSize(depthmap, 0);
         float diff_x = 1.0 / texturesize.x;
         float diff_y = 1.0 / texturesize.y;
-        const float f = 10;
 
-        float correction = 1;
-        float correction_z = 1;
+        // Get the points in camera coordinates
+        pointD = from_texture_to_camera(texcoords0 + vec2(-diff_x, 0), depthmap);
+        pointF = from_texture_to_camera(texcoords0 + vec2(diff_x, 0), depthmap);
+        pointH = from_texture_to_camera(texcoords0 + vec2(0, -diff_y), depthmap) ;
+        pointB = from_texture_to_camera(texcoords0 + vec2(0, diff_y), depthmap);
 
-
-        // depthmap_factor: how far is the depthmap away from the camera?
-        // TODO not used
-        //float depthmap_factor = 5; // TODO define this in a uniform
-
-        //position_c = position_c + textureLod(depthmap, texcoords0, 0).r;
-        vec3 vectorDF, vectorHB;
-        float x, y, z;
-        vec2 coords = texcoords0;
-        coords = (coords - vec2(0.5, 0.5)) * 2;
-
-        float pointD_z = - correction - textureLod(depthmap, texcoords0 + vec2(-diff_x, 0), 0).r;
-        float pointF_z = - correction - textureLod(depthmap, texcoords0 + vec2(diff_x, 0), 0).r;
-        x = (((coords.x + diff_x) * pointF_z) - ((coords.x - diff_x) * pointD_z) )/ f;
-        z = pointF_z - pointD_z;
-        vectorDF = vec3(x, 0, z);
-
-        float pointB_z = - correction - textureLod(depthmap, texcoords0 + vec2(0, diff_y), 0).r;
-        float pointH_z = - correction - textureLod(depthmap, texcoords0 + vec2(0, -diff_y), 0).r;
-        y = (((coords.y + diff_y) * pointB_z) - ((coords.y - diff_y) * pointH_z) )/ f;
-        z = pointB_z - pointD_z;
-        vectorHB = vec3(0, y, z);
+        vec3 vectorDF = pointF - pointD;
+        vec3 vectorHB = pointB - pointH;
 
         normal = normalize(cross(vectorDF, vectorHB));
-
-        // Map range (-1, 1) to range (0, 1) when visualized in color
-        normal = (normal + 1) / 2.;
+        normal = (normal + 1) / 2.; // Map range (-1, 1) to range (0, 1) when visualized in color
     }
     else {
         // Normalize and map resulting range from (-1,1) to (0,1)
         normal = (normalize(normal0) + 1 ) / 2;
     }
+
     out_color = vec4(normal, 1);
     //out_color = vec4(diff_x, diff_y, 0, 1);
 }
