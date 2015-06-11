@@ -5,7 +5,14 @@ __author__ = 'johannes'
 """
 
 import numpy as np
-import context, scenes, cameras, meshes, materials, lights
+
+import context
+import scenes
+import cameras
+import meshes
+import materials
+import lights
+
 
 if __name__ == '__main__':
 
@@ -17,10 +24,12 @@ if __name__ == '__main__':
     scene = scenes.Scene(backgroundcolor=np.array([1., 1., 1., 1.]))
     sphere_geometry = meshes.IcosphereGeometry(subdivisions=4)
     sphere_material = materials.DepthMaterial()
-    sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry, material=sphere_material)
+    sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
+                         material=sphere_material)
 
     square_material = materials.DepthMaterial()
-    square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(), material=square_material)
+    square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(),
+                         material=square_material)
     square.size = 3
 
     light1 = lights.AmbientLight(color=np.array([0.2, 0.2, 0.2, 1]))

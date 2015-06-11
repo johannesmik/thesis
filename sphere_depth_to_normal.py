@@ -4,7 +4,14 @@ Takes a depthmap from a sphere and calculates the normal
 """
 
 import numpy as np
-import context, scenes, cameras, meshes, materials, lights
+
+import context
+import scenes
+import cameras
+import meshes
+import materials
+import lights
+
 
 if __name__ == '__main__':
 
@@ -16,7 +23,8 @@ if __name__ == '__main__':
     scene = scenes.Scene(backgroundcolor=np.array([1., .6, 0, 1]))
     square_material = materials.NormalMaterial()
     square_material.add_depthmap('images/sphere_depth.png')
-    square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -1.5]), geometry=meshes.SquareGeometry(), material=square_material)
+    square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -1.5]), geometry=meshes.SquareGeometry(),
+                         material=square_material)
     square.size = 1.0
 
     light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)

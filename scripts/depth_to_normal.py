@@ -8,40 +8,32 @@ import matplotlib.pyplot as plt
 
 ' Here I want to test different methods to calculate the normal map from a depth map '
 
+
 def open_as_array(filename):
     """ Opens image as array """
     img = misc.imread(filename)
     array = img.astype(float)
     return array
 
-def normals_from_depth_sobel(depth):
-    ' Calculate the normals with sobel '
-    # TODO not correct yet
-    HEIGHT, WIDTH = depth.shape
-    normals = 255 * np.ones((HEIGHT, WIDTH, 4))
-    normals[:,:,0] = sobel_v(depth)
-    normals[:,:,1] = sobel_h(depth)
-
-    return normals
 
 def normals_from_depth_pcl(depth, ksearch=10):
-    ''' Calculate normals with pcl '''
+    """ Calculate normals with pcl """
 
     # Camera parameters
     n, f = 1.0, 20.0
     l, r = -1.0, 1.0
     t, b = 1.0, -1.0
 
-    HEIGHT, WIDTH = depth.shape
+    height, width = depth.shape
 
     # Warp into 3D Space
-    xndc, yndc = np.meshgrid(np.linspace(-1, 1, WIDTH), np.linspace(1, -1, HEIGHT))
+    xndc, yndc = np.meshgrid(np.linspace(-1, 1, width), np.linspace(1, -1, height))
     zndc = 2 * (depth / 255.) - 1
-    zeye = 2 * f * n / (zndc*(f-n)-(f+n))
-    xeye = -zeye*(xndc*(r-l)+(r+l))/(2.0*n)
-    yeye = -zeye*(yndc*(t-b)+(t+b))/(2.0*n)
+    zeye = 2 * f * n / (zndc * (f - n) - (f + n))
+    xeye = -zeye * (xndc * (r - l) + (r + l)) / (2.0 * n)
+    yeye = -zeye * (yndc * (t - b) + (t + b)) / (2.0 * n)
     a = np.dstack((xeye, yeye, zeye))
-    a = np.reshape(a, (WIDTH * HEIGHT, 3))
+    a = np.reshape(a, (width * height, 3))
     a = a.astype(np.float32)
 
     # Calculate normals
@@ -49,47 +41,50 @@ def normals_from_depth_pcl(depth, ksearch=10):
     pointcloud.from_array(a)
     pclnormals = pointcloud.calc_normals(ksearch=ksearch)
 
-    normals = np.ones((HEIGHT, WIDTH, 4))
-    normals[:,:,:3] = pclnormals.reshape(HEIGHT, WIDTH, 3)
+    normals = np.ones((height, width, 4))
+    normals[:, :, :3] = pclnormals.reshape(height, width, 3)
     return normals
+
 
 def normals_from_depth_sobel(depth):
-    ' Calculate the normals with sobel '
+    """ Calculate the normals with sobel """
     # TODO not correct yet
-    HEIGHT, WIDTH = depth.shape
-    normals = np.ones((HEIGHT, WIDTH, 4))
+    heigth, width = depth.shape
+    normals = np.ones((heigth, width, 4))
 
-    normals[:,:,0] = 0.1 * (1 + depth) * sobel_v(depth)
-    normals[:,:,1] = 0.1 * (1 + depth) * -sobel_h(depth)
-    normals[:,:,2] = (1 + depth)
+    normals[:, :, 0] = 0.1 * (1 + depth) * sobel_v(depth)
+    normals[:, :, 1] = 0.1 * (1 + depth) * -sobel_h(depth)
+    normals[:, :, 2] = (1 + depth)
 
     # Normalize such that the length is one, and the values range between -1 and 1
     normals = normals / 255.
-    normals = normals / np.linalg.norm(normals[:,:,:3], axis=2)[:,:,np.newaxis]
-    #normals[:,:,3] = 1
+    normals = normals / np.linalg.norm(normals[:, :, :3], axis=2)[:, :, np.newaxis]
+    # normals[:,:,3] = 1
     return normals
+
 
 def normals_from_depth_sobel2(depth):
-    ' Calculate the normals with sobel '
+    """ Calculate the normals with sobel """
     # TODO not correct yet
-    HEIGHT, WIDTH = depth.shape
-    normals = 255 * np.ones((HEIGHT, WIDTH, 4))
-    normals[:,:,0] = depth * sobel_v(depth)
-    normals[:,:,1] = depth * -sobel_h(depth)
-    normals[:,:,2] = 1
+    height, width = depth.shape
+    normals = 255 * np.ones((height, width, 4))
+    normals[:, :, 0] = depth * sobel_v(depth)
+    normals[:, :, 1] = depth * -sobel_h(depth)
+    normals[:, :, 2] = 1
 
     # Normalize such that the length is one, and the values range between -1 and 1
     normals = normals / 255.
-    normals[:,:,:3] = normals[:,:,:3] / np.linalg.norm(normals[:,:,:3], axis=2)[:,:,np.newaxis]
-    normals[:,:,3] = 1
+    normals[:, :, :3] = normals[:, :, :3] / np.linalg.norm(normals[:, :, :3], axis=2)[:, :, np.newaxis]
+    normals[:, :, 3] = 1
     return normals
 
+
 def normals_from_depth_sobel3(depth):
-    HEIGHT, WIDTH = depth.shape
+    height, width = depth.shape
     normals = np.cross
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     # Sphere from Image
 
     depth1 = open_as_array("images/reconstruction-scene8/depth.png")
@@ -101,19 +96,19 @@ if __name__ == '__main__':
     normal_sobel = normals_from_depth_sobel2(depth1)
     normal_sobel = ((normal_sobel + 1) / 2.) * 255
 
-    plt.subplot(3,3,1)
+    plt.subplot(3, 3, 1)
     plt.title("Depthmap")
     plt.imshow(depth1, cmap=plt.cm.gray, interpolation='nearest', vmin=0, vmax=255)
     plt.colorbar()
 
-    plt.subplot(3,3,2)
+    plt.subplot(3, 3, 2)
     plt.title("Normal PCL")
-    plt.imshow(normal_pcl.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
+    plt.imshow(normal_pcl.astype('uint8')[:, :, :3], cmap=plt.cm.gray, interpolation='nearest')
     plt.colorbar()
 
-    plt.subplot(3,3,3)
+    plt.subplot(3, 3, 3)
     plt.title("Normal (sobel)")
-    plt.imshow(normal_sobel.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
+    plt.imshow(normal_sobel.astype('uint8')[:, :, :3], cmap=plt.cm.gray, interpolation='nearest')
     plt.colorbar()
 
     # Sphere from OpenGL context
@@ -140,7 +135,6 @@ if __name__ == '__main__':
     # plt.subplot(3,3,6)
     # plt.imshow(normal_sobel2.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
     # plt.colorbar()
-
 
     # Squares
 

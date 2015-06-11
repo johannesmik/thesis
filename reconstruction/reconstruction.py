@@ -1,15 +1,22 @@
 __author__ = 'johannes'
 
+import time
+
 import numpy as np
 import pcl
 import matplotlib.pyplot as plt
 from scipy import misc
-from  scipy import optimize
-from skimage.filters import sobel, sobel_h, sobel_v, median, scharr_h, scharr_v
+from scipy import optimize
+from skimage.filters import sobel, sobel_h, sobel_v, median
 from skimage.morphology import disk
-import cProfile
-import time
-import context, scenes, cameras, meshes, materials, lights
+
+import context
+import scenes
+import cameras
+import meshes
+import materials
+import lights
+
 
 """
     Naming convention:
@@ -17,10 +24,10 @@ import context, scenes, cameras, meshes, materials, lights
         ___map = Image (not flattened)
 """
 
-class Minimize(object):
 
+class Minimize(object):
     def __init__(self, sensor_depthmap, sensor_intensitymap, ground_depthmap, ground_intensitymap, normal='sobel',
-                 glcontext=None, camera=None, scene=None, maxIterations=10):
+                 glcontext=None, camera=None, scene=None, max_iterations=10):
 
         self.sensor_depthmap = sensor_depthmap
         self.sensor_intensitymap = sensor_intensitymap
@@ -42,15 +49,15 @@ class Minimize(object):
 
         if not scene:
             # Initialize Scene #TODO
-                self.scene = scenes.NormalTexture(lighttype="point", material="lambertian")
+            self.scene = scenes.NormalTexture(lighttype="point", material="lambertian")
         else:
             self.scene = scene
 
         self.scene_depth = scenes.DepthTexture(lighttype="point", material="normal")
 
-        self.maxIterations = maxIterations
+        self.max_iterations = max_iterations
 
-        self.material = self.scene.meshes[0].material # Material of first mesh
+        self.material = self.scene.meshes[0].material  # Material of first mesh
 
         self.ksearch = 15  # For PCL normal finding
 
@@ -61,14 +68,14 @@ class Minimize(object):
         self.sensor_normalmap = self.normals(sensor_depthmap)
 
     def init_plot_variables(self):
-        ' (Re-) initializes the plot variables to zero '
+        """ (Re-) initializes the plot variables to zero """
         self.energy_total_plot = []
         self.energy_depth_plot = []
         self.energy_intensity_plot = []
         self.energy_normal_plot = []
 
     def init_result_variables(self):
-        ' (Re-) initializes the result variables to zero '
+        """ (Re-) initializes the result variables to zero """
         self.result_depthmap = np.zeros((self.height, self.width))
         self.result_normalmap = np.zeros((self.height, self.width))
         self.result_intensitymap = np.zeros((self.height, self.width))
@@ -79,7 +86,7 @@ class Minimize(object):
         self.result_rmse_3 = 0
 
     def callback(self, xk):
-        ' Called after one iteration of the optimization. '
+        """ Called after one iteration of the optimization. """
 
         energy_terms = self.energy(xk, returnall=True)
 
@@ -112,19 +119,19 @@ class Minimize(object):
 
         energy_intensity = np.sum((intensity - self.sensor_intensitymap) ** 2, axis=(0, 1))
 
-        energy_normal = np.sum((sobel(normal[:,:,0]))**2)
-        energy_normal += np.sum((sobel(normal[:,:,1]))**2)
-        energy_normal += np.sum((sobel(normal[:,:,2]))**2)
+        energy_normal = np.sum((sobel(normal[:, :, 0])) ** 2)
+        energy_normal += np.sum((sobel(normal[:, :, 1])) ** 2)
+        energy_normal += np.sum((sobel(normal[:, :, 2])) ** 2)
 
         return energy_depth, energy_intensity, energy_normal
 
     def intensity(self, normalmap, depthmap=None):
-        " Calculate the intensity from a normalmap (and a depthmap). [Depthmap for light attenuation reasons] "
+        """ Calculate the intensity from a normalmap (and a depthmap). [Depthmap for light attenuation reasons] """
 
         height, width, colors = normalmap.shape
         self.material.overwrite_texture('normalmap', np.flipud(normalmap).astype('uint8').tobytes(), width, height)
         self.context._render(self.scene, self.camera)
-        intensity = self.context.current_buffer()[:,:,0]
+        intensity = self.context.current_buffer()[:, :, 0]
 
         return intensity
 
@@ -140,18 +147,18 @@ class Minimize(object):
         return normal
 
     def normals_from_pcl(self, depthmap):
-        HEIGHT, WIDTH = depthmap.shape
+        heigth, width = depthmap.shape
         # Reprojection
         n, f = 1.0, 20.0
         l, r = -1.0, 1.0
         t, b = 1.0, -1.0
-        xndc, yndc = np.meshgrid(np.linspace(-1, 1, WIDTH), np.linspace(1, -1, HEIGHT))
+        xndc, yndc = np.meshgrid(np.linspace(-1, 1, width), np.linspace(1, -1, heigth))
         zndc = 2 * (depthmap / 255.) - 1
-        zeye = 2 * f * n / (zndc*(f-n)-(f+n))
-        xeye = -zeye*(xndc*(r-l)+(r+l))/(2.0*n)
-        yeye = -zeye*(yndc*(t-b)+(t+b))/(2.0*n)
+        zeye = 2 * f * n / (zndc * (f - n) - (f + n))
+        xeye = -zeye * (xndc * (r - l) + (r + l)) / (2.0 * n)
+        yeye = -zeye * (yndc * (t - b) + (t + b)) / (2.0 * n)
         a = np.dstack((xeye, yeye, zeye))
-        a = np.reshape(a, (WIDTH * HEIGHT, 3))
+        a = np.reshape(a, (width * heigth, 3))
         a = a.astype(np.float32)
 
         # Calculate normals
@@ -159,22 +166,23 @@ class Minimize(object):
         pointcloud.from_array(a)
         pclnormals = pointcloud.calc_normals(ksearch=self.ksearch)
 
-        normals = np.ones((HEIGHT, WIDTH, 4))
-        normals[:,:,:3] = pclnormals.reshape(WIDTH, HEIGHT, 3)
+        normals = np.ones((heigth, width, 4))
+        normals[:, :, :3] = pclnormals.reshape(width, heigth, 3)
         return normals
 
-    def normals_from_sobel(self, depthmap):
-        ' Calculate the normals with sobel '
-        HEIGHT, WIDTH = depthmap.shape
-        normals = 255 * np.ones((HEIGHT, WIDTH, 4))
-        normals[:,:,0] = depthmap * sobel_v(depthmap)
-        normals[:,:,1] = depthmap * -sobel_h(depthmap)
-        normals[:,:,2] = 255
+    @staticmethod
+    def normals_from_sobel(depthmap):
+        """ Calculate the normals with sobel """
+        height, width = depthmap.shape
+        normals = 255 * np.ones((height, width, 4))
+        normals[:, :, 0] = depthmap * sobel_v(depthmap)
+        normals[:, :, 1] = depthmap * -sobel_h(depthmap)
+        normals[:, :, 2] = 255
 
         # Normalize such that the length is one, and the values range between -1 and 1
         normals = normals / 255.
-        normals[:,:,:3] = normals[:,:,:3] / np.linalg.norm(normals[:,:,:3], axis=2)[:,:,np.newaxis]
-        #normals[:,:,3] = 1
+        normals[:, :, :3] = normals[:, :, :3] / np.linalg.norm(normals[:, :, :3], axis=2)[:, :, np.newaxis]
+        # normals[:,:,3] = 1
         return normals
 
     def normals_from_scharr(self, depthmap):
@@ -187,14 +195,16 @@ class Minimize(object):
 
         normal = 255 * np.ones((height, width, 4), dtype='float64')
 
-        self.scene_depth.meshes[0].material.overwrite_texture_bw('depthmap', np.flipud(depthmap).astype('uint8').tobytes(), width, height)
+        self.scene_depth.meshes[0].material.overwrite_texture_bw('depthmap',
+                                                                 np.flipud(depthmap).astype('uint8').tobytes(), width,
+                                                                 height)
         self.context._render(self.scene_depth, self.camera)
-        normal[:,:,:3] = self.context.current_buffer()[:,:,:]
+        normal[:, :, :3] = self.context.current_buffer()[:, :, :]
 
         return normal
 
     def optimize(self, start_depthmap):
-        " Optimize start value and recalculate results. "
+        """ Optimize start value and recalculate results. """
 
         # (Re-) Calculate start values
         self.start_depthmap = start_depthmap
@@ -208,7 +218,9 @@ class Minimize(object):
 
         # (Re-) Calculate results
 
-        xopt, fopt, func_calls, grad_calls, warnflag = optimize.fmin_cg(self.energy, start_depthmap.flatten(), epsilon=1, maxiter=self.maxIterations, callback=self.callback, full_output=True)
+        xopt, fopt, func_calls, grad_calls, warnflag = optimize.fmin_cg(self.energy, start_depthmap.flatten(),
+                                                                        epsilon=1, maxiter=self.max_iterations,
+                                                                        callback=self.callback, full_output=True)
 
         self.result_depthmap = xopt.reshape((self.height, self.width))
         self.result_normalmap = self.normals(self.result_depthmap)
@@ -220,13 +232,17 @@ class Minimize(object):
         self.result_func_calls = func_calls
         self.result_grad_calls = grad_calls
 
-        self.result_rmse_0 = np.sqrt( np.sum( (self.ground_depthmap - self.sensor_depthmap)**2, axis=(0,1) ) / (self.height * self.width) )
-        self.result_rmse_1 = np.sqrt( np.sum( (self.ground_depthmap - self.start_depthmap)**2, axis=(0,1) ) / (self.height * self.width) )
-        self.result_rmse_2 = np.sqrt( np.sum( (self.ground_depthmap - self.result_depthmap)**2, axis=(0,1) ) / (self.height * self.width) )
-        self.result_rmse_3 = np.sqrt( np.sum( (self.ground_intensitymap - self.result_intensitymap)**2, axis=(0,1) ) / (self.height * self.width) )
+        self.result_rmse_0 = np.sqrt(
+            np.sum((self.ground_depthmap - self.sensor_depthmap) ** 2, axis=(0, 1)) / (self.height * self.width))
+        self.result_rmse_1 = np.sqrt(
+            np.sum((self.ground_depthmap - self.start_depthmap) ** 2, axis=(0, 1)) / (self.height * self.width))
+        self.result_rmse_2 = np.sqrt(
+            np.sum((self.ground_depthmap - self.result_depthmap) ** 2, axis=(0, 1)) / (self.height * self.width))
+        self.result_rmse_3 = np.sqrt(np.sum((self.ground_intensitymap - self.result_intensitymap) ** 2, axis=(0, 1)) / (
+            self.height * self.width))
 
     def save_results(self, name):
-        ' Save results to files called "name_..." . '
+        """ Save results to files called "name_..." . """
 
         np.save('%s_start_depthmap.npy' % name, self.start_depthmap)
         np.save('%s_start_intensitymap.npy' % name, self.start_intensitymap)
@@ -254,7 +270,7 @@ class Minimize(object):
             f.write(text)
 
     def show_results(self, plottitle="Plot: Optimization Results"):
-        " Show results as a matplotlib plot "
+        """ Show results as a matplotlib plot """
 
         print "Time needed (seconds): ", self.result_seconds
 
@@ -288,11 +304,13 @@ class Minimize(object):
         results_to_plot.append((self.sensor_intensitymap, "Sensor Intensity"))
         results_to_plot.append((self.start_intensitymap, "Start Intensity"))
         results_to_plot.append((self.result_intensitymap, "Result Intensity"))
-        results_to_plot.append((np.abs(self.start_intensitymap.astype("int64") - self.result_intensitymap.astype("int64")).astype("uint8"), "|Start - Result|"))
+        results_to_plot.append((
+            np.abs(self.start_intensitymap.astype("int64") - self.result_intensitymap.astype("int64")).astype("uint8"),
+            "|Start - Result|"))
 
-        results_to_plot.append((self.sensor_normalmap.astype('uint8')[:,:,:3], "Sensor Normal"))
-        results_to_plot.append((self.start_normalmap.astype('uint8')[:,:,:3], "Start Normal"))
-        results_to_plot.append((self.result_normalmap.astype('uint8')[:,:,:3], "Result Normal"))
+        results_to_plot.append((self.sensor_normalmap.astype('uint8')[:, :, :3], "Sensor Normal"))
+        results_to_plot.append((self.start_normalmap.astype('uint8')[:, :, :3], "Start Normal"))
+        results_to_plot.append((self.result_normalmap.astype('uint8')[:, :, :3], "Result Normal"))
 
         rows, columns = 3, 5
 
@@ -300,10 +318,9 @@ class Minimize(object):
         plt.suptitle(plottitle)
 
         for i, result_to_plot in enumerate(results_to_plot):
-
             plot, title = result_to_plot
 
-            plt.subplot(rows, columns, i+1)
+            plt.subplot(rows, columns, i + 1)
             plt.title(title)
             plt.imshow(plot, cmap=plt.cm.gray, interpolation='nearest')
             plt.colorbar()
@@ -316,18 +333,21 @@ def open_as_array(filename):
     array = img.astype(float)
     return array
 
+
 def sphere(glcontext):
-    " Use glcontext to render an intensity and depth image of a Sphere "
+    """ Use glcontext to render an intensity and depth image of a Sphere """
 
     # Create Scene to render images
     scene = scenes.Scene(backgroundcolor=np.array([1, 1, 1, 1]))
     sphere_geometry = meshes.IcosphereGeometry(subdivisions=4)
     sphere_material = materials.LambertianMaterial()
-    sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry, material=sphere_material)
+    sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
+                         material=sphere_material)
     scene.add(sphere)
 
     square_material = materials.LambertianMaterial()
-    square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(), material=square_material)
+    square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(),
+                         material=square_material)
     square.size = 3
     scene.add(square)
 
@@ -337,30 +357,34 @@ def sphere(glcontext):
     camera = cameras.PerspectiveCamera()
 
     glcontext._render(scene, camera)
-    intensitymap = glcontext.current_buffer()[:,:,0]
+    intensitymap = glcontext.current_buffer()[:, :, 0]
 
     square.material = materials.DepthMaterial()
     sphere.material = materials.DepthMaterial()
     glcontext._render(scene, camera)
-    depthmap = glcontext.current_buffer()[:,:,0]
+    depthmap = glcontext.current_buffer()[:, :, 0]
 
     return intensitymap.astype("float64"), depthmap.astype("float64")
 
+
 def squares(glcontext):
-    " Use glcontext to render an intensity and depth image of a Sphere "
+    """ Use glcontext to render an intensity and depth image of a Sphere """
 
     # Create Scene to render images
     scene = scenes.Scene(backgroundcolor=np.array([1, 1, 1, 1]))
 
     square_material = materials.LambertianMaterial()
-    square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(), material=square_material)
+    square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -3]), geometry=meshes.SquareGeometry(),
+                         material=square_material)
     square.size = 3
     scene.add(square)
 
-    square2 = meshes.Mesh(name='Square 2', position=np.array([0, 0, -2.5]), geometry=meshes.SquareGeometry(), material=square_material)
+    square2 = meshes.Mesh(name='Square 2', position=np.array([0, 0, -2.5]), geometry=meshes.SquareGeometry(),
+                          material=square_material)
     scene.add(square2)
 
-    square3 = meshes.Mesh(name='Square 3', position=np.array([1, -1, -2.4]), geometry=meshes.SquareGeometry(), material=square_material)
+    square3 = meshes.Mesh(name='Square 3', position=np.array([1, -1, -2.4]), geometry=meshes.SquareGeometry(),
+                          material=square_material)
     scene.add(square3)
 
     light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
@@ -369,13 +393,13 @@ def squares(glcontext):
     camera = cameras.PerspectiveCamera()
 
     glcontext._render(scene, camera)
-    intensitymap = glcontext.current_buffer()[:,:,0]
+    intensitymap = glcontext.current_buffer()[:, :, 0]
 
     square.material = materials.DepthMaterial()
     square2.material = materials.DepthMaterial()
     square3.material = materials.DepthMaterial()
     glcontext._render(scene, camera)
-    depthmap = glcontext.current_buffer()[:,:,0]
+    depthmap = glcontext.current_buffer()[:, :, 0]
 
     return intensitymap.astype("float64"), depthmap.astype("float64")
 
@@ -397,7 +421,7 @@ if __name__ == '__main__':
         # intensitymap = open_as_array("human-face/intensity_small.png")
         # depthmap = open_as_array("human-face/depth_small.png")
         ground_intensity = intensitymap.copy()
-        ground_depth = depthmap.copy() # Ground True
+        ground_depth = depthmap.copy()  # Ground True
 
         # Add some noise to depth
         mu, sigma = 0, 5
@@ -408,7 +432,8 @@ if __name__ == '__main__':
         sensor_intensitymap = intensitymap + sigma * np.random.randn(*intensitymap.shape) + mu
 
         smooth_normal_minimizer = Minimize(sensor_depthmap, sensor_intensitymap, ground_depth, ground_intensity,
-                                           normal='opengl', glcontext=glcontext, camera=None, scene=None, maxIterations=5)
+                                           normal='opengl', glcontext=glcontext, camera=None, scene=None,
+                                           max_iterations=5)
         # Unfiltered Start Depth
         start_depthmap = sensor_depthmap.copy()
 
@@ -416,7 +441,7 @@ if __name__ == '__main__':
         smooth_normal_minimizer.show_results(plottitle="Unfiltered Start Depth")
         smooth_normal_minimizer.save_results("results/unfiltered")
 
-        #Median Filtered Start Depth
+        # Median Filtered Start Depth
         start_depthmap = sensor_depthmap.copy()
         start_depthmap = np.clip(start_depthmap, 0, 255) / 255.0
         median(start_depthmap, disk(2), out=start_depthmap)
@@ -437,12 +462,11 @@ if __name__ == '__main__':
         widths = [30, 60, 120, 512]
         heights = [30, 60, 120, 424]
         for width, height in zip(widths, heights):
-
             glcontext = context.Context(width=width, height=height, show_framerate=False)
 
             intensitymap, depthmap = sphere(glcontext)
             ground_intensity = intensitymap.copy()
-            ground_depth = depthmap.copy() # Ground True
+            ground_depth = depthmap.copy()  # Ground True
 
             mu, sigma = 0, 5
             sensor_depthmap = depthmap + sigma * np.random.randn(*depthmap.shape) + mu
@@ -451,14 +475,13 @@ if __name__ == '__main__':
             sensor_intensitymap = intensitymap + sigma * np.random.randn(*intensitymap.shape) + mu
 
             smooth_normal_minimizer = Minimize(sensor_depthmap, sensor_intensitymap, ground_depth, ground_intensity,
-                                               normal='pcl', glcontext=glcontext, camera=None, scene=None, maxIterations=30)
+                                               normal='pcl', glcontext=glcontext, camera=None, scene=None,
+                                               max_iterations=30)
             # Unfiltered Start Depth
             start_depthmap = sensor_depthmap.copy()
 
             smooth_normal_minimizer.optimize(start_depthmap)
             smooth_normal_minimizer.show_results(plottitle="%dx%d" % (width, height))
             smooth_normal_minimizer.save_results("results/%dx%d" % (width, height))
-
-
 
     plt.show()

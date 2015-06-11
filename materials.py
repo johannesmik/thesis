@@ -4,16 +4,14 @@ from OpenGL.GL import *
 from PIL import Image
 import numpy as np
 
-class BaseMaterial(object):
 
+class BaseMaterial(object):
     def __init__(self):
 
         self.uniforms = {}
-        self.textures = {}
-        self.textures['colormap'] = self.empty_texture(color="white")
+        self.textures = {'colormap': self.empty_texture(color="white")}
 
-        self.uniforms = {}
-        self.uniforms['basecolor'] = np.array([1., 1., 1.])
+        self.uniforms = {'basecolor': np.array([1., 1., 1.])}
 
     def put_up_uniforms(self, shader):
         for uniform_name, uniform_value in self.uniforms.items():
@@ -34,15 +32,16 @@ class BaseMaterial(object):
             elif uniform_value_len == 4:
                 glUniform4f(location, *uniform_value)
 
-    def empty_texture(self, color='white'):
-        "Create a one-by-one pixel texture with a given color and return it's id"
+    @staticmethod
+    def empty_texture(color='white'):
+        """Create a one-by-one pixel texture with a given color and return it's id"""
         if color == 'black':
             imagebytes = '\x00\x00\x00'
         else:
-            imagebytes = '\xff\xff\xff' # white
+            imagebytes = '\xff\xff\xff'  # white
 
-        id = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, id)
+        texture_id = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture_id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, imagebytes)
         glEnable(GL_TEXTURE_2D)
@@ -50,7 +49,7 @@ class BaseMaterial(object):
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        return id
+        return texture_id
 
     def add_colormap(self, filename):
         self.add_texture('colormap', filename)
@@ -65,16 +64,16 @@ class BaseMaterial(object):
         self.uniforms['use_depthmap'] = True
 
     def overwrite_texture(self, name, imagebytes, width, height):
-        ''' Overwrite the texture id with imagebytes '''
-        id = self.textures[name]
-        glBindTexture(GL_TEXTURE_2D, id)
+        """ Overwrite the texture id with imagebytes """
+        texture_id = self.textures[name]
+        glBindTexture(GL_TEXTURE_2D, texture_id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imagebytes)
 
     def overwrite_texture_bw(self, name, imagebytes, width, height):
-        ''' Overwrite the texture id with imagebytes '''
-        id = self.textures[name]
-        glBindTexture(GL_TEXTURE_2D, id)
+        """ Overwrite the texture id with imagebytes """
+        texture_id = self.textures[name]
+        glBindTexture(GL_TEXTURE_2D, texture_id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, imagebytes)
 
@@ -83,8 +82,8 @@ class BaseMaterial(object):
         im = im.transpose(Image.FLIP_TOP_BOTTOM)
         ix, iy, imagebytes = im.size[0], im.size[1], im.tobytes("raw")
         print "opened", filename, ix, iy
-        id = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, id)
+        texture_id = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, texture_id)
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, imagebytes)
 
@@ -94,12 +93,12 @@ class BaseMaterial(object):
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
-        self.textures[name] = id
+        self.textures[name] = texture_id
 
     def put_up_textures(self, shader):
 
         for i, texture_name in enumerate(self.textures):
-            id = self.textures[texture_name]
+            texture_id = self.textures[texture_name]
             if texture_name == 'colormap':
                 texture_unit = 0
             elif texture_name == 'normalmap':
@@ -107,29 +106,33 @@ class BaseMaterial(object):
             elif texture_name == 'depthmap':
                 texture_unit = 2
             glActiveTexture(GL_TEXTURE0 + texture_unit)
-            glBindTexture(GL_TEXTURE_2D, id)
+            glBindTexture(GL_TEXTURE_2D, texture_id)
             glUniform1i(shader.locations.get(texture_name, -1), texture_unit)
+
 
 class AmbientMaterial(BaseMaterial):
     pass
 
+
 class LambertianMaterial(BaseMaterial):
     pass
 
+
 class BlinnPhongMaterial(BaseMaterial):
-
     def __init__(self, specularity=1.0, specular_color=np.array([1., 1., 1.])):
-
         super(BlinnPhongMaterial, self).__init__()
 
         self.uniforms['specularity'] = specularity
         self.uniforms['specular_color'] = specular_color
 
+
 class BRDFMaterial(BaseMaterial):
     pass
 
+
 class NormalMaterial(BaseMaterial):
     pass
+
 
 class DepthMaterial(BaseMaterial):
     pass

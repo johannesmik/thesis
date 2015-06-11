@@ -2,6 +2,7 @@ __author__ = 'johannes'
 
 import numpy as np
 
+
 class Object3D(object):
     # TODO cache matrices
     def __init__(self, name=None, position=None, rotation=None, size=1):
@@ -24,7 +25,7 @@ class Object3D(object):
 
     @property
     def rotationmatrix(self):
-        x,y,z = self.rotation
+        x, y, z = self.rotation
         zrotation = np.array([[np.cos(z), np.sin(z), 0, 0],
                               [-np.sin(z), np.cos(z), 0, 0],
                               [0, 0, 1, 0],
@@ -33,7 +34,7 @@ class Object3D(object):
                               [0, 1, 0, 0],
                               [-np.sin(y), 0, np.cos(y), 0],
                               [0, 0, 0, 1]])
-        xrotation = np.array([[1, 0, 0 ,0],
+        xrotation = np.array([[1, 0, 0, 0],
                               [0, np.cos(x), np.sin(x), 0],
                               [0, -np.sin(x), np.cos(x), 0],
                               [0, 0, 0, 1]])
@@ -43,9 +44,9 @@ class Object3D(object):
     @property
     def scalematrix(self):
         scale = np.array([[self.size, 0, 0, 0],
-                         [0, self.size, 0, 0],
-                         [0, 0, self.size, 0],
-                         [0,   0,   0,     1]])
+                          [0, self.size, 0, 0],
+                          [0, 0, self.size, 0],
+                          [0, 0, 0, 1]])
         return scale
 
     @property

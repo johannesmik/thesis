@@ -3,6 +3,7 @@ __author__ = 'johannes'
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 
+
 class Shader:
     def __init__(self, vertexshader, fragmentshader, attributes, uniforms):
         """ Initialize the Shader and get locations for the GLSL variables """
@@ -16,7 +17,7 @@ class Shader:
         self.attribute_locations = {}
         for attribute in attributes:
             location = glGetAttribLocation(self.program, attribute)
-            if location == None:
+            if location is None:
                 raise Exception("Could not get location of attribute %s" % attribute)
             elif location == -1:
                 print "Attribute %s is not used in the shader (%s or %s)" % (attribute, vertexshader, fragmentshader)
@@ -25,7 +26,7 @@ class Shader:
         self.uniform_locations = {}
         for uniform in uniforms:
             location = glGetUniformLocation(self.program, uniform)
-            if location == None:
+            if location is None:
                 raise Exception("Could not get location of uniform %s" % uniform)
             elif location == -1:
                 print "Uniform %s is not used in the shader (%s or %s)" % (uniform, vertexshader, fragmentshader)
@@ -34,7 +35,6 @@ class Shader:
         self.locations = {}
         self.locations.update(self.attribute_locations)
         self.locations.update(self.uniform_locations)
-
 
 
 class ShaderLib:
@@ -48,8 +48,8 @@ class ShaderLib:
      - Depth Shader
      - Normal Shader
     """
-    def __init__(self):
 
+    def __init__(self):
         self.ambient = Shader('./shaders/vertex.glsl', './shaders/fragment-ambient.glsl',
                               ['position', 'texcoords'],
                               ['PMatrix', 'MMatrix', 'VMatrix'])
@@ -59,14 +59,16 @@ class ShaderLib:
                             ['PMatrix', 'MMatrix', 'VMatrix'])
 
         self.normal = Shader('shaders/vertex.glsl', 'shaders/fragment-normal.glsl',
-                            ['position', 'color', 'normal', 'texcoords'],
-                            ['PMatrix', 'MMatrix', 'VMatrix', 'colormap', 'normalmap', 'depthmap', 'basecolor', 'use_normalmap', 'use_depthmap'])
+                             ['position', 'color', 'normal', 'texcoords'],
+                             ['PMatrix', 'MMatrix', 'VMatrix', 'colormap', 'normalmap', 'depthmap', 'basecolor',
+                              'use_normalmap', 'use_depthmap'])
 
         self.lambertian = Shader('shaders/vertex.glsl', 'shaders/fragment-lambertian.glsl',
-                            ['position', 'color', 'normal', 'texcoords'],
-                            ['PMatrix', 'MMatrix', 'VMatrix',  'colormap', 'normalmap', 'depthmap', 'basecolor', 'use_normalmap', 'use_colormap'])
+                                 ['position', 'color', 'normal', 'texcoords'],
+                                 ['PMatrix', 'MMatrix', 'VMatrix', 'colormap', 'normalmap', 'depthmap', 'basecolor',
+                                  'use_normalmap', 'use_colormap'])
 
         self.blinnphong = Shader('shaders/vertex.glsl', 'shaders/fragment-blinnphong.glsl',
-                            ['position', 'color', 'normal', 'texcoords'],
-                            ['PMatrix', 'MMatrix', 'VMatrix',  'colormap', 'normalmap', 'depthmap', 'basecolor',
-                             'use_normalmap', 'use_colormap', 'specularity', 'specular_color'])
+                                 ['position', 'color', 'normal', 'texcoords'],
+                                 ['PMatrix', 'MMatrix', 'VMatrix', 'colormap', 'normalmap', 'depthmap', 'basecolor',
+                                  'use_normalmap', 'use_colormap', 'specularity', 'specular_color'])

@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 # Author: Johannes
 
+import sys
+import time
+
 from OpenGL.GL import *
 from sdl2 import *
-from OpenGL.GL import shaders as glshaders
-from OpenGL.arrays import vbo
 from OpenGL.GL.framebufferobjects import *
 from PIL import Image
 import numpy as np
-import sys
-import time
-import math
-import ctypes
 
-import shaders, meshes, cameras, materials, scenes
+import shaders
+import cameras
+import materials
+import scenes
+
 
 class Context:
     def __init__(self, width, height, show_framerate=True):
@@ -39,7 +40,6 @@ class Context:
         self.framerate()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-
         for mesh in scene.meshes:
 
             # Get the program of the mesh's material and bind to opengl
@@ -58,7 +58,7 @@ class Context:
             glUseProgram(shader.program)
 
             # Bind the camera up the program shader
-            #TODO
+            # TODO
 
             # Get all lights and bind them up the program shader
             for number, light in enumerate(scene.lights):
@@ -69,55 +69,56 @@ class Context:
             mesh.material.put_up_textures(shader)
 
             # Put up camera uniforms
-            #glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
+            # glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
             glUniformMatrix4fv(shader.locations['VMatrix'], 1, GL_TRUE, camera.viewmatrix)
             glUniformMatrix4fv(shader.locations['PMatrix'], 1, GL_TRUE, camera.projectionmatrix)
 
             if mesh.visible:
-                        try:
-                            # IDEA: use a Buffer Object to switch uniforms faster!
-                            if mesh.modelmatrix != None:
-                                glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, mesh.modelmatrix)
-                            else:
-                                print "modelmatrix not found"
+                try:
+                    glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, mesh.modelmatrix)
 
-                            if mesh.geometry.vertices and shader.locations.get('position', -1) != -1:
-                                glEnableVertexAttribArray(shader.locations['position'])
-                                mesh.geometry.vertices.bind()
-                                glVertexAttribPointer(shader.locations['position'], 3, GL_FLOAT, False, 3*4, mesh.geometry.vertices)
-                            if mesh.geometry.colors and shader.locations.get('color', -1) != -1:
-                                glEnableVertexAttribArray(shader.locations['color'])
-                                mesh.geometry.colors.bind()
-                                glVertexAttribPointer(shader.locations['color'], 3, GL_FLOAT, False, 3*4, mesh.geometry.colors)
-                            if mesh.geometry.texcoords and shader.locations.get('texcoords', -1) != -1:
-                                glEnableVertexAttribArray(shader.locations['texcoords'])
-                                mesh.geometry.texcoords.bind()
-                                glVertexAttribPointer(shader.locations['texcoords'], 2, GL_FLOAT, False, 2*4, mesh.geometry.texcoords)
-                            if mesh.geometry.normals and shader.locations.get('normal', -1) != -1:
-                                glEnableVertexAttribArray(shader.locations['normal'])
-                                mesh.geometry.normals.bind()
-                                glVertexAttribPointer(shader.locations['normal'], 3, GL_FLOAT, False, 3*4, mesh.geometry.normals)
+                    if mesh.geometry.vertices and shader.locations.get('position', -1) != -1:
+                        glEnableVertexAttribArray(shader.locations['position'])
+                        mesh.geometry.vertices.bind()
+                        glVertexAttribPointer(shader.locations['position'], 3, GL_FLOAT, False, 3 * 4,
+                                              mesh.geometry.vertices)
+                    if mesh.geometry.colors and shader.locations.get('color', -1) != -1:
+                        glEnableVertexAttribArray(shader.locations['color'])
+                        mesh.geometry.colors.bind()
+                        glVertexAttribPointer(shader.locations['color'], 3, GL_FLOAT, False, 3 * 4,
+                                              mesh.geometry.colors)
+                    if mesh.geometry.texcoords and shader.locations.get('texcoords', -1) != -1:
+                        glEnableVertexAttribArray(shader.locations['texcoords'])
+                        mesh.geometry.texcoords.bind()
+                        glVertexAttribPointer(shader.locations['texcoords'], 2, GL_FLOAT, False, 2 * 4,
+                                              mesh.geometry.texcoords)
+                    if mesh.geometry.normals and shader.locations.get('normal', -1) != -1:
+                        glEnableVertexAttribArray(shader.locations['normal'])
+                        mesh.geometry.normals.bind()
+                        glVertexAttribPointer(shader.locations['normal'], 3, GL_FLOAT, False, 3 * 4,
+                                              mesh.geometry.normals)
 
-                            if mesh.geometry.indices:
-                                glDrawElements(GL_TRIANGLES, len(mesh.geometry.indices), GL_UNSIGNED_SHORT, mesh.geometry.indices)
-                            elif mesh.geometry.vertices:
-                                numpoints = mesh.geometry.vertices.data.shape[0]
-                                glDrawArrays(GL_POINTS, 0, numpoints)
+                    if mesh.geometry.indices:
+                        glDrawElements(GL_TRIANGLES, len(mesh.geometry.indices), GL_UNSIGNED_SHORT,
+                                       mesh.geometry.indices)
+                    elif mesh.geometry.vertices:
+                        numpoints = mesh.geometry.vertices.data.shape[0]
+                        glDrawArrays(GL_POINTS, 0, numpoints)
 
-                        finally:
-                            glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
-                            if mesh.geometry.vertices and shader.locations.get('position', -1) != -1:
-                                mesh.geometry.vertices.unbind()
-                                glDisableVertexAttribArray(shader.locations['position'])
-                            if mesh.geometry.colors and shader.locations.get('color', -1) != -1:
-                                mesh.geometry.colors.unbind()
-                                glDisableVertexAttribArray(shader.locations['color'])
-                            if mesh.geometry.texcoords and shader.locations.get('texcoords', -1) != -1:
-                                mesh.geometry.texcoords.unbind()
-                                glDisableVertexAttribArray(shader.locations['texcoords'])
-                            if mesh.geometry.normals and shader.locations.get('normal', -1) != -1:
-                                mesh.geometry.normals.unbind()
-                                glDisableVertexAttribArray(shader.locations['normal'])
+                finally:
+                    glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
+                    if mesh.geometry.vertices and shader.locations.get('position', -1) != -1:
+                        mesh.geometry.vertices.unbind()
+                        glDisableVertexAttribArray(shader.locations['position'])
+                    if mesh.geometry.colors and shader.locations.get('color', -1) != -1:
+                        mesh.geometry.colors.unbind()
+                        glDisableVertexAttribArray(shader.locations['color'])
+                    if mesh.geometry.texcoords and shader.locations.get('texcoords', -1) != -1:
+                        mesh.geometry.texcoords.unbind()
+                        glDisableVertexAttribArray(shader.locations['texcoords'])
+                    if mesh.geometry.normals and shader.locations.get('normal', -1) != -1:
+                        mesh.geometry.normals.unbind()
+                        glDisableVertexAttribArray(shader.locations['normal'])
         return True
 
     def init_framerate(self):
@@ -154,7 +155,6 @@ class Context:
         glBindRenderbuffer(GL_RENDERBUFFER, 0)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-
     def init_sdl(self):
         SDL_Init(SDL_INIT_EVERYTHING)
         SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8)
@@ -171,16 +171,16 @@ class Context:
         self.event = SDL_Event()
 
     def current_buffer(self):
-        ''' Returns the content of the current buffer as a numpy array '''
+        """ Returns the content of the current buffer as a numpy array """
 
-        buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
-        image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
+        gl_buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
+        image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=gl_buffer)
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
 
         return np.array(image)
 
     def render_to_buffer(self, scene, camera):
-        ''' Renders to framebuffer.  '''
+        """ Renders to framebuffer.  """
 
         # TODO renderbuffer/framebuffer does not depth test
         glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
@@ -201,7 +201,6 @@ class Context:
             self.frames = 0
             SDL_GL_SwapWindow(self.window)
 
-
     def screenshot(self, scene, camera, filename):
         """
         Takes a screenshot of the current view.
@@ -213,13 +212,13 @@ class Context:
 
         self._render(scene, camera)
 
-        buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
-        image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=buffer)
+        gl_buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
+        image = Image.frombytes(mode="RGB", size=(self.width, self.height), data=gl_buffer)
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
         with open(filename, 'w') as f:
             image.save(f)
 
-        print "saved screenshot as '%s'" % (filename)
+        print "saved screenshot as '%s'" % filename
 
         # Clean up
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -239,21 +238,20 @@ class Context:
         glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
         glBindRenderbuffer(GL_RENDERBUFFER, self.rbo)
         self.render(scene, camera)
-        buffer = glReadPixels(0, 0, self.width, self.height, GL_RED, GL_FLOAT)
-        image = Image.frombytes(mode="F", size=(self.width, self.height), data=buffer)
+        gl_buffer = glReadPixels(0, 0, self.width, self.height, GL_RED, GL_FLOAT)
+        image = Image.frombytes(mode="F", size=(self.width, self.height), data=gl_buffer)
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
         with open(filename, 'w') as f:
             image.save(f)
 
-        print "saved 32bit bw screenshot as '%s'" % (filename)
+        print "saved 32bit bw screenshot as '%s'" % filename
 
         # Clean up
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
-
-    def keyPressed(self, event, scene, camera):
-        ''' Handles the event when a key is pressed. '''
+    def key_pressed(self, event, scene, camera):
+        """ Handles the event when a key is pressed. """
 
         if event.key.keysym.sym == SDLK_ESCAPE:
             sys.exit()
@@ -264,7 +262,7 @@ class Context:
         if event.key.keysym.sym == SDLK_DOWN or event.key.keysym.sym == SDLK_s:
             camera.move_backward(0.1)
 
-        if  event.key.keysym.sym == SDLK_a:
+        if event.key.keysym.sym == SDLK_a:
             camera.move_left(0.1)
 
         if event.key.keysym.sym == SDLK_d:
@@ -313,12 +311,12 @@ class Context:
             print ""
 
     def resize_event(self, event, camera):
-        ''' Handles a resize event. Event: SDL-event data. '''
+        """ Handles a resize event. Event: SDL-event data. """
         self.reshape(event.window.data1, event.window.data2)
         camera.reshape(event.window.data1, event.window.data2)
 
     def reshape(self, width, height):
-        ''' Resize Width and height in pixels. '''
+        """ Resize Width and height in pixels. """
         self.width, self.height = width, height
 
         glViewport(0, 0, width, height)
@@ -331,13 +329,13 @@ class Context:
         glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
     def sdl_control(self, scene, camera):
-        ''' Check for window events '''
+        """ Check for window events """
         while SDL_PollEvent(ctypes.byref(self.event)) != 0:
 
             if self.event.type == SDL_QUIT:
                 return False
             if self.event.type == events.SDL_KEYDOWN:
-                self.keyPressed(self.event, scene, camera)
+                self.key_pressed(self.event, scene, camera)
             if self.event.type == SDL_MOUSEMOTION:
                 pass
             if self.event.type == SDL_MOUSEBUTTONDOWN:
@@ -348,7 +346,7 @@ class Context:
 
     @staticmethod
     def print_opengl_info():
-        ''' Print out information about the OpenGL version. '''
+        """ Print out information about the OpenGL version. """
         print "GL_RENDERER   = ", glGetString(GL_RENDERER)
         print "GL_VERSION    = ", glGetString(GL_VERSION)
         print "GL_VENDOR     = ", glGetString(GL_VENDOR)
@@ -358,9 +356,7 @@ class Context:
 if __name__ == '__main__':
 
     # Create the context
-    width = 200
-    height = 200
-    c = Context(width=width, height=height, show_framerate=True)
+    c = Context(width=200, height=200, show_framerate=True)
     c.print_opengl_info()
 
     scene = scenes.DepthTexture(material="normal")

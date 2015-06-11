@@ -10,15 +10,16 @@ import core
 
 # TODO clean up this file
 
-def normalized(array, axis=1):
+
+def normalized(array):
     n = np.linalg.norm(array, axis=1)
-    n[n==0] = 1
-    return  array / np.expand_dims(n, 1)
+    n[n == 0] = 1
+    return array / np.expand_dims(n, 1)
+
 
 class Mesh(core.Object3D):
     # TODO cache matrices
     def __init__(self, geometry=None, material=None, name=None, position=None, rotation=None):
-
         super(Mesh, self).__init__(name=name, position=position, rotation=rotation)
 
         # To be initialized in the subclasses
@@ -29,10 +30,9 @@ class Mesh(core.Object3D):
         # Todo Implement this
         pass
 
+
 class PointCloud(core.Object3D):
-
     def __init__(self, geometry=None, material=None, name=None, position=None, rotation=None):
-
         super(PointCloud, self).__init__(name=name, position=position, rotation=rotation)
 
         self.geometry = geometry
@@ -41,6 +41,7 @@ class PointCloud(core.Object3D):
     def draw(self):
         # Todo implement this
         pass
+
 
 # Todo: self.colors is not used in the shaders?
 # Delete in the shader, or delete here? Alternative is using the materials basecolor
@@ -62,10 +63,10 @@ class ObjectFile(Geometry):
     def __init__(self, filename):
         """
          Loads an obj file. Currently works with files exported from blender (check 'export normal' setting as well)
-         Vertices are not 'reused' here, that means one vertex belongs to exactly one face. Normally, vertices are reused,
+         Vertices are not 'reused' here, that means 1 vertex belongs to exactly 1 face. Normally, vertices are reused,
          often one vertex belongs to one or more faces. We don't do this here because the obj file generally doesn't
-         describe one normal per vertice, but instead one normal per vector per face, So the normal on the vertex can be different,
-         depending on which face it belongs to.
+         describe one normal per vertice, but instead one normal per vector per face, So the normal on the vertex can
+         be different, depending on which face it belongs to.
 
          Overwrites vertices, texcoords, normals, indices
 
@@ -74,7 +75,7 @@ class ObjectFile(Geometry):
         super(ObjectFile, self).__init__()
 
         verts, texcoords, norms = [], [], []
-        vertsOut, texcoordsOut, normsOut = [], [], []
+        verts_out, texcoords_out, norms_out = [], [], []
         indices = []
 
         for line in open(filename, "r"):
@@ -86,31 +87,39 @@ class ObjectFile(Geometry):
             if vals[0] == "vt":
                 texcoords.append([float(v) for v in vals[1:3]])
             if vals[0] == "f":
-                current_index = len(vertsOut)
+                current_index = len(verts_out)
                 # Triangles
                 if len(vals) == 4:
                     for f in vals[1:]:
                         w = f.split("/")
-                        if len(w) > 0 and w[0] is not '': vertsOut.append(list(verts[int(w[0])-1]))
-                        if len(w) > 1 and w[1] is not '': texcoordsOut.append(list(texcoords[int(w[1])-1]))
-                        if len(w) > 2 and w[2] is not '': normsOut.append(list(norms[int(w[2])-1]))
-                    indices.extend([current_index + i for i in [0,1,2]])
+                        if len(w) > 0 and w[0] is not '':
+                            verts_out.append(list(verts[int(w[0]) - 1]))
+                        if len(w) > 1 and w[1] is not '':
+                            texcoords_out.append(list(texcoords[int(w[1]) - 1]))
+                        if len(w) > 2 and w[2] is not '':
+                            norms_out.append(list(norms[int(w[2]) - 1]))
+                    indices.extend([current_index + i for i in [0, 1, 2]])
                 # Quads
                 elif len(vals) == 5:
                     for f in vals[1:]:
                         w = f.split("/")
-                        if len(w) > 0 and w[0] is not '': vertsOut.append(list(verts[int(w[0])-1]))
-                        if len(w) > 1 and w[1] is not '': texcoordsOut.append(list(texcoords[int(w[1])-1]))
-                        if len(w) > 2 and w[2] is not '': normsOut.append(list(norms[int(w[2])-1]))
-                    indices.extend([current_index + i for i in [0,1,2,0,2,3]]) # Appends the quad as two
+                        if len(w) > 0 and w[0] is not '':
+                            verts_out.append(list(verts[int(w[0]) - 1]))
+                        if len(w) > 1 and w[1] is not '':
+                            texcoords_out.append(list(texcoords[int(w[1]) - 1]))
+                        if len(w) > 2 and w[2] is not '':
+                            norms_out.append(list(norms[int(w[2]) - 1]))
+                    indices.extend([current_index + i for i in [0, 1, 2, 0, 2, 3]])  # Appends the quad as two
 
-        self.vertices = vbo.VBO(np.array(vertsOut, 'float32'), usage=GL_STATIC_DRAW)
-        self.texcoords = vbo.VBO(np.array(texcoordsOut, 'float32'), usage=GL_STATIC_DRAW)
-        self.normals = vbo.VBO(np.array(normsOut, 'float32'), usage=GL_STATIC_DRAW)
+        self.vertices = vbo.VBO(np.array(verts_out, 'float32'), usage=GL_STATIC_DRAW)
+        self.texcoords = vbo.VBO(np.array(texcoords_out, 'float32'), usage=GL_STATIC_DRAW)
+        self.normals = vbo.VBO(np.array(norms_out, 'float32'), usage=GL_STATIC_DRAW)
         self.indices = indices
+
 
 class TriangleGeometry(Geometry):
     """ Create a small triangle """
+
     def __init__(self):
         super(TriangleGeometry, self).__init__()
 
@@ -128,29 +137,31 @@ class TriangleGeometry(Geometry):
 
         self.indices = [0, 1, 2]
 
+
 class IcosphereGeometry(Geometry):
     """ Icosphere """
+
     def __init__(self, subdivisions=2, color=None):
         super(IcosphereGeometry, self).__init__()
         t = (1 + math.sqrt(5.0)) / 2.0
 
-        self.color = color if color != None else np.array([1, 1, 1])
+        self.color = color if color is not None else np.array([1, 1, 1])
 
         vertices = np.array([[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
-                            [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
-                            [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]], 'float32')
+                             [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
+                             [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]], 'float32')
 
         vertices = normalized(vertices)
 
-        colors = np.array([self.color]*12, 'float32')
+        colors = np.array([self.color] * 12, 'float32')
 
         normals = np.array([[-1, t, 0], [1., t, 0], [-1, -t, 0], [1, -t, 0],
-                           [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
-                           [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]], 'float32')
+                            [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
+                            [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]], 'float32')
 
-        indices = [0, 11, 5,   0, 5, 1,   0, 1, 7,   0, 7, 10,   0, 10, 11,   1, 5, 9,   5, 11, 4,   11, 10, 2,
-                   10, 7, 6,   7, 1, 8,   3, 9, 4,   3, 4, 2,    3, 2, 6,   3, 6, 8,   3, 8, 9,   4, 9, 5,
-                   2, 4, 11,   6, 2, 10,  8, 6, 7,   9, 8, 1]
+        indices = [0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2,
+                   10, 7, 6, 7, 1, 8, 3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5,
+                   2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1]
 
         # Subdivide
         next_index = 12
@@ -158,22 +169,22 @@ class IcosphereGeometry(Geometry):
             new_indices = []
             for j in range(0, len(indices), 3):
                 # Create three new vertices
-                tmp1 = (vertices[indices[j],:] + vertices[indices[j+1],:])
-                tmp2 = (vertices[indices[j+1],:] + vertices[indices[j+2],:])
-                tmp3 = (vertices[indices[j+2],:] + vertices[indices[j],:])
+                tmp1 = (vertices[indices[j], :] + vertices[indices[j + 1], :])
+                tmp2 = (vertices[indices[j + 1], :] + vertices[indices[j + 2], :])
+                tmp3 = (vertices[indices[j + 2], :] + vertices[indices[j], :])
                 vertices = np.append(vertices, normalized(np.array([tmp1, tmp2, tmp3], 'float32')), axis=0)
-                colors = np.append(colors, np.array([self.color]*3, 'float32'), axis=0)
-                normals = np.append(normals, np.array([tmp1, tmp2, tmp3],  'float32'), axis=0)
+                colors = np.append(colors, np.array([self.color] * 3, 'float32'), axis=0)
+                normals = np.append(normals, np.array([tmp1, tmp2, tmp3], 'float32'), axis=0)
 
                 # Add 4 new faces
-                new_indices.extend([indices[j], next_index, next_index+2])
+                new_indices.extend([indices[j], next_index, next_index + 2])
                 new_indices.extend([next_index, next_index + 1, next_index + 2])
-                new_indices.extend([next_index, indices[j+1], next_index + 1])
-                new_indices.extend([next_index + 1, indices[j+2], next_index + 2])
+                new_indices.extend([next_index, indices[j + 1], next_index + 1])
+                new_indices.extend([next_index + 1, indices[j + 2], next_index + 2])
                 next_index += 3
             indices = new_indices
 
-        texcoords = np.array([[0, 0]]*vertices.shape[0], 'float32')
+        texcoords = np.array([[0, 0]] * vertices.shape[0], 'float32')
 
         self.vertices = vbo.VBO(vertices, usage=GL_STATIC_DRAW)
         self.colors = vbo.VBO(colors, usage=GL_STATIC_DRAW)
@@ -181,54 +192,55 @@ class IcosphereGeometry(Geometry):
         self.normals = vbo.VBO(normals, usage=GL_STATIC_DRAW)
         self.indices = indices
 
+
 class SquareGeometry(Geometry):
     """ A square, with texcoords """
+
     def __init__(self):
         Geometry.__init__(self)
         self.vertices = vbo.VBO(np.array([[1., 1., 0], [-1., 1., 0], [-1., -1., 0], [1., -1., 0.]], 'float32'),
                                 usage=GL_STATIC_DRAW)
 
-        self.colors = vbo.VBO(np.array([[0, 0, 0]]*4, 'float32'),
+        self.colors = vbo.VBO(np.array([[0, 0, 0]] * 4, 'float32'),
                               usage=GL_STATIC_DRAW)
 
         self.texcoords = vbo.VBO(np.array([[1, 1], [0, 1], [0, 0], [1, 0]], 'float32'),
-                              usage=GL_STATIC_DRAW)
+                                 usage=GL_STATIC_DRAW)
 
         self.normals = vbo.VBO(np.array([[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]], 'float32'),
                                usage=GL_STATIC_DRAW)
 
         self.indices = [0, 1, 2, 0, 2, 3]
 
+
 class Pointcloud(Geometry):
     """ Base class for Pointcloud like meshes. """
+
     def __init__(self, vertices=None, position=None):
 
         Geometry.__init__(self)
-        if vertices == None:
+        if vertices is None:
             self.vertices = None
         else:
             self.vertices = vbo.VBO(vertices.astype('float32'), usage=GL_STATIC_DRAW)
 
-        if position == None:
+        if position is None:
             self.position = np.array([0, 0, 0])
         else:
             self.position = position
 
-
     @property
     def modelmatrix(self):
         tmp = np.eye(4)
-        tmp[0:3,3] = self.position
+        tmp[0:3, 3] = self.position
         return tmp
+
 
 class DepthmapGeometry(Pointcloud):
     # Recover the geometry from a Depthmap
     # TODO: universal camera. At the moment we assume certain intrinsic parameters here
-    def __init__(self, file=None, position=None):
-        if file == None:
-            self.file = "images/screen_depth.png"
-        else:
-            self.file = file
+    def __init__(self, filename, position=None):
+        self.file = filename
         Pointcloud.__init__(self, position)
 
         # Read in Depth image
@@ -249,15 +261,15 @@ class DepthmapGeometry(Pointcloud):
 
         for i in range(height):
             for j in range(width):
-                c = depth_array[i,j]
+                c = depth_array[i, j]
                 # Project each pixel to ndc
-                xndc = j/float(width-1) * 2 - 1
-                yndc = -i/float(height-1) * 2 + 1
-                zndc = 2 * ( depth_array[i, j, 0]/255.) - 1
+                xndc = j / float(width - 1) * 2 - 1
+                yndc = -i / float(height - 1) * 2 + 1
+                zndc = 2 * (depth_array[i, j, 0] / 255.) - 1
                 # Project ndc to eye space
-                zeye = 2 * f * n / (zndc*(f-n)-(f+n))
-                xeye = -zeye*(xndc*(r-l)+(r+l))/(2.0*n)
-                yeye = -zeye*(yndc*(t-b)+(t+b))/(2.0*n)
+                zeye = 2 * f * n / (zndc * (f - n) - (f + n))
+                xeye = -zeye * (xndc * (r - l) + (r + l)) / (2.0 * n)
+                yeye = -zeye * (yndc * (t - b) + (t + b)) / (2.0 * n)
                 depth_array[i, j] = [xeye, yeye, zeye]
 
         # Another reprojection
@@ -273,20 +285,19 @@ class DepthmapGeometry(Pointcloud):
         # a = np.reshape(a, (width*height, 3))
         # a = a.astype(np.float32)
 
-
         # Project depth into world coordinates (Quick hack for known camera position (0,0,0))
         depth_array += np.array([0.0, 0.0, 0.0])
 
-        self.vertices = vbo.VBO(np.reshape(depth_array, (width*height, 3)), usage=GL_STATIC_DRAW)
-        #self.vertices = vbo.VBO(a, usage=GL_STATIC_DRAW)
+        self.vertices = vbo.VBO(np.reshape(depth_array, (width * height, 3)), usage=GL_STATIC_DRAW)
+        # self.vertices = vbo.VBO(a, usage=GL_STATIC_DRAW)
 
-        self.colors = vbo.VBO(np.array([[0,1,0]]*self.numpoints, 'float32'), usage=GL_STATIC_DRAW)
+        self.colors = vbo.VBO(np.array([[0, 1, 0]] * self.numpoints, 'float32'), usage=GL_STATIC_DRAW)
 
         self.calculate_normals_pcl()
-        #self.calculate_normals_1(depth_array, width, height)
+        # self.calculate_normals_1(depth_array, width, height)
 
     def calculate_normals_pcl(self):
-        " Use PCL to calculate normals, use a standard environment of 100 neighbours "
+        """ Use PCL to calculate normals, use a standard environment of 100 neighbours """
 
         pointcloud = pcl.PointCloud()
         pointcloud.from_array(self.vertices.data)
@@ -294,41 +305,44 @@ class DepthmapGeometry(Pointcloud):
         self.normals = vbo.VBO(normals, usage=GL_STATIC_DRAW)
 
     def calculate_normals_1(self, depth_array, width, height):
-        " One (slow) way to calculate normals "
+        """ One (slow) way to calculate normals """
         normals = np.zeros((height, width, 3), dtype='float32')
         for i in range(height):
             for j in range(width):
-                if 1 <= i < height-1 and 1 <= j < width-1:
+                if 1 <= i < height - 1 and 1 <= j < width - 1:
                     # Horizontal-Vertical and Diagonal vectors
-                    v1 = depth_array[i+1, j] - depth_array[i-1, j]
-                    v2 = depth_array[i, j-1] - depth_array[i, j+1]
-                    v3 = depth_array[i+1, j-1] - depth_array[i-1, j+1]
-                    v4 = depth_array[i-1, j-1] - depth_array[i+1, j+1]
+                    v1 = depth_array[i + 1, j] - depth_array[i - 1, j]
+                    v2 = depth_array[i, j - 1] - depth_array[i, j + 1]
+                    v3 = depth_array[i + 1, j - 1] - depth_array[i - 1, j + 1]
+                    v4 = depth_array[i - 1, j - 1] - depth_array[i + 1, j + 1]
 
                     # Normalize those vectors
-                    v1 = v1/np.linalg.norm(v1)
-                    v2 = v2/np.linalg.norm(v2)
-                    v3 = v3/np.linalg.norm(v3)
-                    v4 = v4/np.linalg.norm(v4)
+                    v1 = v1 / np.linalg.norm(v1)
+                    v2 = v2 / np.linalg.norm(v2)
+                    v3 = v3 / np.linalg.norm(v3)
+                    v4 = v4 / np.linalg.norm(v4)
 
                     # Calculate norm
                     normals[i, j] = - np.cross(v1, v2) - np.cross(v3, v4)
-        self.normals = vbo.VBO(np.reshape(normals, (width*height, 3)), usage=GL_STATIC_DRAW)
+        self.normals = vbo.VBO(np.reshape(normals, (width * height, 3)), usage=GL_STATIC_DRAW)
+
 
 class StructureDepthmapGeometry(DepthmapGeometry):
     """ Like Depthmap geometry, but now points get connected.
     Idea: Remove this and put the indices intoo the DepthmapGeometry class everytime.
     """
 
-    def __init__(self, file=None, position=None):
-
-        DepthmapGeometry.__init__(self, file, position)
+    def __init__(self, filename, position=None):
+        DepthmapGeometry.__init__(self, filename, position)
 
         height, width = self.height, self.width
 
         # Create indices
-        self.indices = [i+shift for i in range(0, width*height-width) for shift in (0, width+1, 1) if (i+1)%width != 0]
-        self.indices.extend([i+shift for i in range(width, width*height) for shift in (0, 1, -width) if (i+1)%width != 0])
+        self.indices = [i + shift for i in range(0, width * height - width) for shift in (0, width + 1, 1) if
+                        (i + 1) % width != 0]
+        self.indices.extend(
+            [i + shift for i in range(width, width * height) for shift in (0, 1, -width) if (i + 1) % width != 0])
+
 
 class ColoredDepthmapGeometry(DepthmapGeometry):
     """
@@ -336,16 +350,16 @@ class ColoredDepthmapGeometry(DepthmapGeometry):
     Idea unify this class into the Depthmap Geometry class
     # TODO unify
     """
-    def __init__(self, file=None, position=None):
 
-        DepthmapGeometry.__init__(self, file, position)
+    def __init__(self, filename, position=None):
+        DepthmapGeometry.__init__(self, filename, position)
 
         # Overwrite color VBO
         color_img = Image.open("screen_color.png")
         color_array = np.asarray(color_img, dtype=np.float32)
         height, width, num_colors = color_array.shape
 
-        color_array = np.reshape(color_array, (height*width, 3))
+        color_array = np.reshape(color_array, (height * width, 3))
         print "max", np.min(color_array)
 
         color_array /= 255.

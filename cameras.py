@@ -2,10 +2,12 @@ __author__ = 'johannes'
 
 import numpy as np
 
+
 class Camera(object):
     """
       Camera baseclass
     """
+
     def __init__(self, name="Camera", position=None, rotation=None):
         """
         A simple camera. You can change (XYZ) position and (XYZ) rotation.
@@ -49,7 +51,7 @@ class Camera(object):
 
     @property
     def rotationmatrix(self):
-        x,y,z = -self.rotation
+        x, y, z = -self.rotation
         zrotation = np.array([[np.cos(z), np.sin(z), 0, 0],
                               [-np.sin(z), np.cos(z), 0, 0],
                               [0, 0, 1, 0],
@@ -58,7 +60,7 @@ class Camera(object):
                               [0, 1, 0, 0],
                               [-np.sin(y), 0, np.cos(y), 0],
                               [0, 0, 0, 1]])
-        xrotation = np.array([[1, 0, 0 ,0],
+        xrotation = np.array([[1, 0, 0, 0],
                               [0, np.cos(x), np.sin(x), 0],
                               [0, -np.sin(x), np.cos(x), 0],
                               [0, 0, 0, 1]])
@@ -71,14 +73,15 @@ class Camera(object):
 
     @property
     def projectionmatrix(self):
-        pass
+        """ To be implemented by the subclasses """
+        return np.eye(4)
 
     def reshape(self, width, height):
-        " Called when the dimensions of the viewport have changed "
+        """ Called when the dimensions of the viewport have changed """
         pass
 
-class PerspectiveCamera(Camera):
 
+class PerspectiveCamera(Camera):
     # IDEA: cache matrix entries
 
     def __init__(self, name=None, position=None, rotation=None):
@@ -100,14 +103,17 @@ class PerspectiveCamera(Camera):
         # See http://www.songho.ca/opengl/gl_projectionmatrix.html
         # Or 'Red Book' chapter 5
         return np.array([[self.near / self.right, 0, 0, 0],
-                         [0, self.near/self.top, 0 , 0],
-                         [0, 0, -(self.far+self.near)/(self.far-self.near), -2*self.far*self.near/(self.far - self.near)],
+                         [0, self.near / self.top, 0, 0],
+                         [0, 0, -(self.far + self.near) / (self.far - self.near),
+                          -2 * self.far * self.near / (self.far - self.near)],
                          [0, 0, -1, 0]])
+
 
 class PerspectiveCamera2(Camera):
     """
     Use another Projection Matrix, such that there is a linear relationship between Z (world) and z_c (clip)
     """
+
     def __init__(self, name=None, width=None, height=None, position=None, rotation=None):
         super(PerspectiveCamera2, self).__init__(name=name, position=position, rotation=rotation)
 
@@ -122,19 +128,18 @@ class PerspectiveCamera2(Camera):
         self.top = (424 * self.near) / (2 * self.fy)
 
     def reshape(self, width, height):
-        return
-        self.right = (512 * self.near) / (2 * self.fx)
-        self.top = (424 * self.near) / (2 * self.fy)
+        pass
 
     @property
     def projectionmatrix(self):
         return np.array([[self.near / self.right, 0, 0, 0],
-                         [0, self.near/self.top, 0 , 0],
-                         [0, 0, -(self.far+self.near)/(self.far-self.near), -2*self.far*self.near/(self.far - self.near)],
+                         [0, self.near / self.top, 0, 0],
+                         [0, 0, -(self.far + self.near) / (self.far - self.near),
+                          -2 * self.far * self.near / (self.far - self.near)],
                          [0, 0, -1, 0]])
 
-class PerspectiveCamera3(Camera):
 
+class PerspectiveCamera3(Camera):
     def __init__(self, name=None, position=None, rotation=None):
         super(PerspectiveCamera3, self).__init__(name=name, position=position, rotation=rotation)
 

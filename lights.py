@@ -3,6 +3,7 @@ __author__ = 'johannes'
 from OpenGL.GL import *
 import numpy as np
 
+
 class Light(object):
     """ Baseclass for a light.
     """
@@ -14,6 +15,7 @@ class Light(object):
         self.uniforms = {}
         self.lighttype = 'baselights'
         self.name = "Light"
+        self.number = 0
 
     def put_up_uniforms(self, shader):
         for uniform_name in self.uniforms:
@@ -28,8 +30,8 @@ class Light(object):
             elif number_of_values == 4:
                 glUniform4f(location, *uniformvalue)
 
-class DirectionalLight(Light):
 
+class DirectionalLight(Light):
     def __init__(self, name='Light', position=None, color=None, falloff=None, direction=None):
         self.lighttype = 'directionlights'
         self.name = name
@@ -38,45 +40,38 @@ class DirectionalLight(Light):
         self.falloff = falloff
         self.direction = direction / np.linalg.norm(direction)
 
-        self.uniforms = {}
-        self.uniforms['color'] = [color, 4]
-        self.uniforms['direction'] = [ direction, 3]
+        self.uniforms = {'color': [color, 4], 'direction': [direction, 3]}
 
         self.number = DirectionalLight.counter
         DirectionalLight.counter += 1
 
+
 class PointLight(Light):
     def __init__(self, position, color, falloff, name='Light'):
         self.lighttype = 'pointlights'
-        self.name = 'Light'
-        self.uniforms = {}
-        self.uniforms['color'] = [color, 4]
-        self.uniforms['position'] = [position, 3]
-        self.uniforms['falloff'] = [falloff, 1]
+        self.name = name
+        self.uniforms = {'color': [color, 4], 'position': [position, 3], 'falloff': [falloff, 1]}
 
         self.number = PointLight.counter
         PointLight.counter += 1
+
 
 class AmbientLight(Light):
     def __init__(self, color, name='Light'):
         self.lighttype = 'ambientlights'
         self.name = name
-        self.uniforms = {}
-        self.uniforms['color'] = [color, 4]
+        self.uniforms = {'color': [color, 4]}
 
         self.number = AmbientLight.counter
         AmbientLight.counter += 1
 
+
 class SpotLight(Light):
-    def __init__(self, position, direction, cone_angle, color, falloff, name='Light',):
+    def __init__(self, position, direction, cone_angle, color, falloff, name='Light', ):
         self.lighttype = 'spotlights'
         self.name = name
-        self.uniforms = {}
-        self.uniforms['color'] = [color, 4]
-        self.uniforms['position'] = [position, 3]
-        self.uniforms['direction'] = [direction, 3]
-        self.uniforms['cone_angle'] = [cone_angle, 1]
-        self.uniforms['falloff'] = [falloff, 1]
+        self.uniforms = {'color': [color, 4], 'position': [position, 3], 'direction': [direction, 3],
+                         'cone_angle': [cone_angle, 1], 'falloff': [falloff, 1]}
 
         self.number = SpotLight.counter
         SpotLight.counter += 1
