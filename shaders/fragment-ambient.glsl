@@ -1,4 +1,4 @@
-#version 150
+#version 130
 
 uniform sampler2D colormap;
 uniform vec3 basecolor;

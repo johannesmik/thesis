@@ -1,4 +1,4 @@
-#version 150
+#version 130
 
 uniform bool use_colormap;
 uniform bool use_normalmap;

@@ -1,4 +1,4 @@
-#version 150
+#version 130
 #extension GL_ARB_explicit_attrib_location : enable
 
 uniform vec3 light_position;
