@@ -35,32 +35,46 @@ def show_image(image):
 
 
 mod = SourceModule("""
-__global__ void normal(float *dest, float *img)
+#include <stdint.h>
+#include <cuda.h>
+#include <surface_functions.h>
+texture<float, cudaTextureType2D, cudaReadModeElementType> tex_in;
+
+__global__ void normal(float *dest)
 {
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
   const int y = blockIdx.y * blockDim.y + threadIdx.y;
   const int elementPitch = blockDim.x * gridDim.x;
   const int index = y * elementPitch + x;
 
-  // Find the neighbours
-  //const int index_b = max(index - elementPitch, 0);
-  const int index_d = max(index - 1, 0);
-  const int index_f = index + 1;
-  //const int index_h = min(index + elementPitch, elementPitch*gridDim.y -1);
+  //float value = tex2D(tex_in, x, y);
 
-  dest[index] = img[index_f] - img[index_d];
+  // Find the neighbours
+  const float value_b = tex2D(tex_in, x, y-1);
+  //const float value_d = tex2D(tex_in, x-1, y);
+  //const float value_f = tex2D(tex_in, x+1, y);
+  const float value_h = tex2D(tex_in, x, y+1);
+
+  dest[index] = value_h - value_b;
+
 }
 """)
 
 multiply_them = mod.get_function("normal")
+tex_in = mod.get_texref('tex_in')
+tex_in.set_address_mode(1, drv.address_mode.WRAP)
+tex_in.set_address_mode(2, drv.address_mode.WRAP)
 
 image = Image.open("sphere_depth.tiff")
 image = np.asarray(image, dtype=np.float32)
 show_image(image)
 
+image_arr = drv.matrix_to_array(image, 'C')
+tex_in.set_array(image_arr)
 dest = np.zeros_like(image)
+
 multiply_them(
-    drv.Out(dest), drv.In(image),
+    drv.Out(dest),
     block=(16, 8, 1), grid=(32, 53))
 
 show_image(dest)
