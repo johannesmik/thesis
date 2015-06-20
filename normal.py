@@ -26,7 +26,7 @@ def show_image(image):
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
 
-    im = plt.imshow(image_copy, interpolation="nearest", cmap=cm, vmin=0.0, vmax=1.0)
+    im = plt.imshow(image_copy, interpolation="nearest", cmap=cm, vmin=-1.0, vmax=1.0)
 
     # Set up the colorbar
     divider = make_axes_locatable(ax)
@@ -43,8 +43,12 @@ __global__ void normal(float *dest, float *img)
   const int index = y * elementPitch + x;
 
   // Find the neighbours
+  //const int index_b = max(index - elementPitch, 0);
+  const int index_d = max(index - 1, 0);
+  const int index_f = index + 1;
+  //const int index_h = min(index + elementPitch, elementPitch*gridDim.y -1);
 
-  dest[index] = img[index];
+  dest[index] = img[index_f] - img[index_d];
 }
 """)
 
