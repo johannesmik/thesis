@@ -35,11 +35,69 @@ def show_image(image):
 
 
 mod = SourceModule("""
-#include <stdint.h>
 #include <cuda.h>
-#include <surface_functions.h>
-texture<float, cudaTextureType2D, cudaReadModeElementType> tex_in;
+//#include <vector_types.h>
+//#include <math.h>
+texture<float, cudaTextureType2D, cudaReadModeElementType> depth_in;
 
+/* ADDITION */
+
+inline __device__ float3 operator+(float3 a, float3 b) {
+  return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+inline __device__ float3 operator+(float3 a, float b) {
+  return make_float3(a.x + b, a.y + b, a.z + b);
+}
+
+/* SUBTRACTION */
+
+inline __device__ float3 operator-(float3 a, float3 b) {
+  return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+/* MULTIPLICATION */
+
+inline __device__ float3 operator*(float3 a, float b) {
+  return make_float3(a.x * b, a.y * b, a.z * b);
+}
+
+/* DIVISION */
+
+inline __device__ float3 operator/(float3 a, float b) {
+  return make_float3(a.x / b, a.y / b, a.z / b);
+}
+
+inline __device__ float dot(float3 a, float3 b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+inline __device__ float3 cross(float3 a, float3 b) {
+  return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+
+inline __device__ float3 normalize(float3 a) {
+  float invLen = 1.0f / sqrtf(dot(a, a));
+  return a * invLen;
+}
+
+extern "C"
+__device__ float3 pixel_to_camera(int xs, int ys, float z)
+{
+  // Camera coordinates
+  const float fx = 368.096588;
+  const float fy = 368.096588;
+  const float ox = 261.696594;
+  const float oy = 202.522202;
+
+  // From Pixel to Camera Coordinates
+  const float x = -z * (xs - ox) / fx;
+  const float y = - (-z * (ys - oy) / fy);
+
+  return make_float3(x, y, z);
+}
+
+extern "C"
 __global__ void normal(float *dest)
 {
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -49,19 +107,28 @@ __global__ void normal(float *dest)
 
   //float value = tex2D(tex_in, x, y);
 
-  // Find the neighbours
-  const float value_b = tex2D(tex_in, x, y-1);
-  //const float value_d = tex2D(tex_in, x-1, y);
-  //const float value_f = tex2D(tex_in, x+1, y);
-  const float value_h = tex2D(tex_in, x, y+1);
+  // Find the neighbours in camera coords
+  const float3 value_b = pixel_to_camera(x, y-1, tex2D(depth_in, x, y-1));
+  const float3 value_d = pixel_to_camera(x-1, y, tex2D(depth_in, x-1, y));
+  const float3 value_f = pixel_to_camera(x+1, y, tex2D(depth_in, x+1, y));
+  const float3 value_h = pixel_to_camera(x, y+1, tex2D(depth_in, x, y+1));
 
-  dest[index] = value_h - value_b;
+  // Calculate Normal
+  const float3 vectorDF = value_f - value_d;
+  const float3 vectorHB = value_b - value_h;
+  float3 normal = normalize(cross(vectorDF, vectorHB));
+  normal = (normal + 1.0) / 2.0;  // Map range (-1, 1) to (0, 1) when visualized in color
+
+  dest[index * 3] = normal.x;
+  dest[index * 3 + 1] = normal.y;
+  dest[index * 3 + 2] = normal.z;
 
 }
-""")
+""", no_extern_c=True)
+# Note: We need the n_extern_c=True so that we can have operator overloading
 
 multiply_them = mod.get_function("normal")
-tex_in = mod.get_texref('tex_in')
+tex_in = mod.get_texref('depth_in')
 tex_in.set_address_mode(1, drv.address_mode.WRAP)
 tex_in.set_address_mode(2, drv.address_mode.WRAP)
 
@@ -71,7 +138,7 @@ show_image(image)
 
 image_arr = drv.matrix_to_array(image, 'C')
 tex_in.set_array(image_arr)
-dest = np.zeros_like(image)
+dest = np.zeros((image.shape[0], image.shape[1], 3), dtype=np.float32)
 
 multiply_them(
     drv.Out(dest),
