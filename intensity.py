@@ -1,3 +1,5 @@
+# Calculate the intensity with a point light
+
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -26,7 +28,10 @@ def show_image(image):
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
 
-    im = plt.imshow(image_copy, interpolation="nearest", cmap=cm, vmin=-1.0, vmax=1.0)
+    minimum = image_copy.min()
+    maximum = image_copy.max()
+
+    im = plt.imshow(image_copy, interpolation="nearest", cmap=cm, vmin=minimum, vmax=maximum)
 
     # Set up the colorbar
     divider = make_axes_locatable(ax)
@@ -38,6 +43,7 @@ mod = SourceModule("""
 #include <cuda.h>
 //#include <vector_types.h>
 //#include <math.h>
+
 texture<float, cudaTextureType2D, cudaReadModeElementType> depth_in;
 
 /* ADDITION */
@@ -54,6 +60,16 @@ inline __device__ float3 operator+(float3 a, float b) {
 
 inline __device__ float3 operator-(float3 a, float3 b) {
   return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+/* UNARY MINUS */
+
+inline __device__ float2 operator-(float2 a) {
+    return make_float2(-a.x, -a.y);
+}
+
+inline __device__ float3 operator-(float3 a) {
+    return make_float3(-a.x, -a.y, -a.z);
 }
 
 /* MULTIPLICATION */
@@ -81,6 +97,16 @@ inline __device__ float3 normalize(float3 a) {
   return a * invLen;
 }
 
+/* Light functions */
+
+__device__ float3 directional_light() {
+  return make_float3(0, 0, 1);
+}
+
+__device__ float3 point_light(float3 w) {
+  return normalize(w);
+}
+
 extern "C"
 __device__ float3 pixel_to_camera(int xs, int ys, float z)
 {
@@ -98,36 +124,46 @@ __device__ float3 pixel_to_camera(int xs, int ys, float z)
 }
 
 extern "C"
-__global__ void normal(float *dest)
+__global__ void intensity(float *normal_out, float *intensity_out)
 {
+  // Constants
+  //const float diff_depth = 0.01;
+  const float albedo = 0.8;
+  float3 light = directional_light();
+
+  // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
   const int y = blockIdx.y * blockDim.y + threadIdx.y;
   const int elementPitch = blockDim.x * gridDim.x;
   const int index = y * elementPitch + x;
 
-  //float value = tex2D(tex_in, x, y);
+  // Point e in World coordinates
+  const float3 point_e = pixel_to_camera(x, y, tex2D(depth_in, x, y));
 
   // Find the neighbours in camera coords
-  const float3 value_b = pixel_to_camera(x, y-1, tex2D(depth_in, x, y-1));
-  const float3 value_d = pixel_to_camera(x-1, y, tex2D(depth_in, x-1, y));
-  const float3 value_f = pixel_to_camera(x+1, y, tex2D(depth_in, x+1, y));
-  const float3 value_h = pixel_to_camera(x, y+1, tex2D(depth_in, x, y+1));
+  const float3 point_b = pixel_to_camera(x, y-1, tex2D(depth_in, x, y-1));
+  const float3 point_d = pixel_to_camera(x-1, y, tex2D(depth_in, x-1, y));
+  const float3 point_f = pixel_to_camera(x+1, y, tex2D(depth_in, x+1, y));
+  const float3 point_h = pixel_to_camera(x, y+1, tex2D(depth_in, x, y+1));
 
   // Calculate Normal
-  const float3 vectorDF = value_f - value_d;
-  const float3 vectorHB = value_b - value_h;
+  const float3 vectorDF = point_f - point_d;
+  const float3 vectorHB = point_b - point_h;
   float3 normal = normalize(cross(vectorDF, vectorHB));
-  normal = (normal + 1.0) / 2.0;  // Map range (-1, 1) to (0, 1) when visualized in color
+  //normal = (normal + 1.0) / 2.0;  // Map range (-1, 1) to (0, 1) when visualized in color
 
-  dest[index * 3] = normal.x;
-  dest[index * 3 + 1] = normal.y;
-  dest[index * 3 + 2] = normal.z;
+  normal_out[index * 3] = normal.x;
+  normal_out[index * 3 + 1] = normal.y;
+  normal_out[index * 3 + 2] = normal.z;
 
+  light = point_light(point_e);
+
+  intensity_out[index] = albedo * dot(normal, light);
 }
 """, no_extern_c=True)
 # Note: We need the n_extern_c=True so that we can have operator overloading
 
-multiply_them = mod.get_function("normal")
+multiply_them = mod.get_function("intensity")
 tex_in = mod.get_texref('depth_in')
 tex_in.set_address_mode(1, drv.address_mode.WRAP)
 tex_in.set_address_mode(2, drv.address_mode.WRAP)
@@ -138,13 +174,16 @@ show_image(image)
 
 image_arr = drv.matrix_to_array(image, 'C')
 tex_in.set_array(image_arr)
-dest = np.zeros((image.shape[0], image.shape[1], 3), dtype=np.float32)
+normal = np.zeros((image.shape[0], image.shape[1], 3), dtype=np.float32)
+
+intensity = np.zeros_like(image)
 
 multiply_them(
-    drv.Out(dest),
+    drv.Out(normal), drv.Out(intensity),
     block=(16, 8, 1), grid=(32, 53))
 
-show_image(dest)
+show_image(normal)
+show_image(intensity)
 
 plt.show()
 
