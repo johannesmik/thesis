@@ -14,7 +14,7 @@ def show_image(image):
 
     image_copy = image.copy()
 
-    fig = plt.figure(figsize=(4, 3))
+    fig = plt.figure(figsize=(8, 6))
     ax = plt.gca()
 
     # Use grey colormap
@@ -28,8 +28,8 @@ def show_image(image):
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
 
-    minimum = image_copy.min()
-    maximum = image_copy.max()
+    minimum = min(image_copy.min(), 0.0)
+    maximum = max(image_copy.max(), 1.0)
 
     im = plt.imshow(image_copy, interpolation="nearest", cmap=cm, vmin=minimum, vmax=maximum)
 
@@ -84,6 +84,8 @@ inline __device__ float3 operator/(float3 a, float b) {
   return make_float3(a.x / b, a.y / b, a.z / b);
 }
 
+/* DOT, CROSS, LEN, NORMAL */
+
 inline __device__ float dot(float3 a, float3 b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
@@ -97,15 +99,24 @@ inline __device__ float3 normalize(float3 a) {
   return a * invLen;
 }
 
+inline __device__ float len(float3 a) {
+  return sqrtf(dot(a, a));
+}
+
 /* Light functions */
 
-__device__ float3 directional_light() {
+__device__ float3 light_directional() {
   return make_float3(0, 0, 1);
 }
 
-__device__ float3 point_light(float3 w) {
+__device__ float3 light_point(float3 w) {
   return normalize(w);
 }
+
+__device__ float attenuation(float falloff, float distance) {
+    return 1.0f / (1 + falloff * distance * distance);
+}
+
 
 extern "C"
 __device__ float3 pixel_to_camera(int xs, int ys, float z)
@@ -129,7 +140,8 @@ __global__ void intensity(float *normal_out, float *intensity_out)
   // Constants
   //const float diff_depth = 0.01;
   const float albedo = 0.8;
-  float3 light = directional_light();
+  const float falloff = 1.0;
+  float3 light = light_directional();
 
   // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -156,9 +168,9 @@ __global__ void intensity(float *normal_out, float *intensity_out)
   normal_out[index * 3 + 1] = normal.y;
   normal_out[index * 3 + 2] = normal.z;
 
-  light = point_light(point_e);
+  light = light_point(point_e);
 
-  intensity_out[index] = albedo * dot(normal, light);
+  intensity_out[index] = attenuation(falloff, len(point_e)) * albedo * dot(normal, light);
 }
 """, no_extern_c=True)
 # Note: We need the n_extern_c=True so that we can have operator overloading
@@ -182,7 +194,6 @@ multiply_them(
     drv.Out(normal), drv.Out(intensity),
     block=(16, 8, 1), grid=(32, 53))
 
-show_image(normal)
 show_image(intensity)
 
 plt.show()
