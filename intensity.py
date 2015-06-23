@@ -1,8 +1,10 @@
-# Calculate the intensity with a point light
+# Calculate the intensity prime (using a point light)
 
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+from PIL import ImageFilter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import pycuda.autoinit
@@ -31,6 +33,8 @@ def show_image(image):
     minimum = min(image_copy.min(), 0.0)
     maximum = max(image_copy.max(), 1.0)
 
+    print("maximum", maximum)
+
     im = plt.imshow(image_copy, interpolation="nearest", cmap=cm, vmin=minimum, vmax=maximum)
 
     # Set up the colorbar
@@ -44,7 +48,8 @@ mod = SourceModule("""
 //#include <vector_types.h>
 //#include <math.h>
 
-texture<float, cudaTextureType2D, cudaReadModeElementType> depth_in;
+texture<float, cudaTextureType2D, cudaReadModeElementType> depth_sensor;
+texture<float, cudaTextureType2D, cudaReadModeElementType> depth_current;
 
 /* ADDITION */
 
@@ -105,18 +110,28 @@ inline __device__ float len(float3 a) {
 
 /* Light functions */
 
-__device__ float3 light_directional() {
+inline __device__ float3 light_directional() {
   return make_float3(0, 0, 1);
 }
 
-__device__ float3 light_point(float3 w) {
+inline __device__ float3 light_point(float3 w) {
   return normalize(w);
 }
 
-__device__ float attenuation(float falloff, float distance) {
+inline __device__ float attenuation(float falloff, float distance) {
     return 1.0f / (1 + falloff * distance * distance);
 }
 
+/* INTENSITY FUNCTIONS */
+
+__device__ float intensity(const float3 &normal, const float3 &w) {
+
+  const float albedo = 0.8;
+  const float falloff = 1.0;
+  const float3 light = light_directional();
+
+  return attenuation(falloff, len(w)) * albedo * dot(normal, light);
+}
 
 extern "C"
 __device__ float3 pixel_to_camera(int xs, int ys, float z)
@@ -135,13 +150,10 @@ __device__ float3 pixel_to_camera(int xs, int ys, float z)
 }
 
 extern "C"
-__global__ void intensity(float *normal_out, float *intensity_out)
+__global__ void intensity_prime(float *normal_out, float *intensity_change)
 {
   // Constants
-  //const float diff_depth = 0.01;
-  const float albedo = 0.8;
-  const float falloff = 1.0;
-  float3 light = light_directional();
+  const float diff_depth = 0.00001;
 
   // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -150,53 +162,106 @@ __global__ void intensity(float *normal_out, float *intensity_out)
   const int index = y * elementPitch + x;
 
   // Point e in World coordinates
-  const float3 point_e = pixel_to_camera(x, y, tex2D(depth_in, x, y));
+  const float3 point_e = pixel_to_camera(x, y, tex2D(depth_sensor, x, y));
 
-  // Find the neighbours in camera coords
-  const float3 point_b = pixel_to_camera(x, y-1, tex2D(depth_in, x, y-1));
-  const float3 point_d = pixel_to_camera(x-1, y, tex2D(depth_in, x-1, y));
-  const float3 point_f = pixel_to_camera(x+1, y, tex2D(depth_in, x+1, y));
-  const float3 point_h = pixel_to_camera(x, y+1, tex2D(depth_in, x, y+1));
+  // Adding diff_depth to the depth will change the intensity of four of it's neighbors.
+  // 1. Find the intensity of those neighbors before adding the depth to the current point
+  float intensity_before[4];
+  for (int i = 0; i < 4; ++i) {
+    int x_n, y_n;
+    if (i == 0) { x_n = x;   y_n = y-1; }
+    if (i == 1) { x_n = x-1; y_n = y ; }
+    if (i == 2) { x_n = x+1; y_n = y; }
+    if (i == 3) { x_n = x;   y_n = y+1; }
 
-  // Calculate Normal
-  const float3 vectorDF = point_f - point_d;
-  const float3 vectorHB = point_b - point_h;
-  float3 normal = normalize(cross(vectorDF, vectorHB));
-  //normal = (normal + 1.0) / 2.0;  // Map range (-1, 1) to (0, 1) when visualized in color
+    // Find the neighbors of the neighbor in camera coords
+    const float3 point_b = pixel_to_camera(x_n, y_n-1, tex2D(depth_sensor, x_n, y_n-1));
+    const float3 point_d = pixel_to_camera(x_n-1, y_n, tex2D(depth_sensor, x_n-1, y_n));
+    const float3 point_f = pixel_to_camera(x_n+1, y_n, tex2D(depth_sensor, x_n+1, y_n));
+    const float3 point_h = pixel_to_camera(x_n, y_n+1, tex2D(depth_sensor, x_n, y_n+1));
 
-  normal_out[index * 3] = normal.x;
-  normal_out[index * 3 + 1] = normal.y;
-  normal_out[index * 3 + 2] = normal.z;
+    // Calculate Normal
+    const float3 vectorDF = point_f - point_d;
+    const float3 vectorHB = point_b - point_h;
+    const float3 normal = normalize(cross(vectorDF, vectorHB));
+    const float3 normal_color = (normal + 1.0) / 2.0;  // Map range (-1, 1) to (0, 1) when visualized in color
 
-  light = light_point(point_e);
+    intensity_before[i] = intensity(normal, point_e);
+  }
 
-  intensity_out[index] = attenuation(falloff, len(point_e)) * albedo * dot(normal, light);
+  // 2. Find the intensity of those neighbors after adding depth to the current point
+  float intensity_after[4];
+  float3 normal_color;
+  for (int i = 0; i < 4; ++i) {
+    int x_n, y_n;
+    if (i == 0) { x_n = x;   y_n = y-1; }
+    if (i == 1) { x_n = x-1; y_n = y ; }
+    if (i == 2) { x_n = x+1; y_n = y; }
+    if (i == 3) { x_n = x;   y_n = y+1; }
+
+    // Find the neighbors of the neighbor in camera coords
+    float3 point_b = pixel_to_camera(x_n, y_n-1, tex2D(depth_sensor, x_n, y_n-1));
+    float3 point_d = pixel_to_camera(x_n-1, y_n, tex2D(depth_sensor, x_n-1, y_n));
+    float3 point_f = pixel_to_camera(x_n+1, y_n, tex2D(depth_sensor, x_n+1, y_n));
+    float3 point_h = pixel_to_camera(x_n, y_n+1, tex2D(depth_sensor, x_n, y_n+1));
+
+    if (i == 0) { point_h = pixel_to_camera(x, y, tex2D(depth_sensor, x, y) + diff_depth); }
+    if (i == 1) { point_f = pixel_to_camera(x, y, tex2D(depth_sensor, x, y) + diff_depth); }
+    if (i == 2) { point_d = pixel_to_camera(x, y, tex2D(depth_sensor, x, y) + diff_depth); }
+    if (i == 3) { point_b = pixel_to_camera(x, y, tex2D(depth_sensor, x, y) + diff_depth); }
+
+    // Calculate Normal
+    const float3 vectorDF = point_f - point_d;
+    const float3 vectorHB = point_b - point_h;
+    const float3 normal = normalize(cross(vectorDF, vectorHB));
+    normal_color = (normal + 1.0) / 2.0;  // Map range (-1, 1) to (0, 1) when visualized in color
+
+    intensity_after[i] = intensity(normal, point_e);
+  }
+
+  intensity_change[index] = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    intensity_change[index] = intensity_change[index] + (intensity_after[i] - intensity_before[i]);
+  }
+  intensity_change[index] = intensity_change[index] / diff_depth;
+  normal_out[index * 3] = normal_color.x;
+  normal_out[index * 3 + 1] = normal_color.y;
+  normal_out[index * 3 + 2] = normal_color.z;
 }
 """, no_extern_c=True)
 # Note: We need the n_extern_c=True so that we can have operator overloading
 
-multiply_them = mod.get_function("intensity")
-tex_in = mod.get_texref('depth_in')
-tex_in.set_address_mode(1, drv.address_mode.WRAP)
-tex_in.set_address_mode(2, drv.address_mode.WRAP)
+intensity_prime = mod.get_function("intensity_prime")
 
-image = Image.open("sphere_depth.tiff")
-image = np.asarray(image, dtype=np.float32)
-show_image(image)
+# Set up textures
+tex_depth_noise = mod.get_texref('depth_sensor')
+tex_depth_noise.set_address_mode(1, drv.address_mode.WRAP)
+tex_depth_noise.set_address_mode(2, drv.address_mode.WRAP)
+depth_image = Image.open("sphere_depth.tiff")
+#depth_image = depth_image.filter(ImageFilter.GaussianBlur(2))
+depth_image = np.asarray(depth_image, dtype=np.float32)
+mu, sigma = 0, 0.0
+depth_image = depth_image + sigma * np.random.randn(*depth_image.shape).astype(np.float32) + mu
+depth_image_arr = drv.matrix_to_array(depth_image, 'C')
+tex_depth_noise.set_array(depth_image_arr)
 
-image_arr = drv.matrix_to_array(image, 'C')
-tex_in.set_array(image_arr)
-normal = np.zeros((image.shape[0], image.shape[1], 3), dtype=np.float32)
+tex_depth_current = mod.get_texref('depth_current')
+tex_depth_current.set_address_mode(1, drv.address_mode.WRAP)
+tex_depth_current.set_address_mode(2, drv.address_mode.WRAP)
+depth_current_arr = drv.matrix_to_array(depth_image, 'C')
+tex_depth_current.set_array(depth_current_arr)
 
-intensity = np.zeros_like(image)
 
-multiply_them(
-    drv.Out(normal), drv.Out(intensity),
+normal = np.zeros((depth_image.shape[0], depth_image.shape[1], 3), dtype=np.float32)
+
+intensity_change = np.zeros_like(depth_image)
+
+intensity_prime(
+    drv.Out(normal), drv.Out(intensity_change),
     block=(16, 8, 1), grid=(32, 53))
 
-show_image(intensity)
+show_image(depth_image)
+show_image(intensity_change)
+show_image(normal)
 
 plt.show()
-
-
-
