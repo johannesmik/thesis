@@ -19,8 +19,8 @@ in vec2 texcoords0;
 in vec3 position_w;
 in vec3 position_c;
 
-layout(location = 0) out vec4 out_color;
-layout(location = 1) out vec4 out_normal;
+out vec4 out_color;
+out vec4 out_normal;
 
 
 vec3 from_texture_to_camera(in vec2 texture_coords, in sampler2D depthmap){
@@ -44,7 +44,6 @@ vec3 from_texture_to_camera(in vec2 texture_coords, in sampler2D depthmap){
   float x = -z * (xs - ox) / fx;
   float y = - (-z * (ys - oy) / fy);
 
-  // TODO why -z?
   return vec3(x, y, z);
 }
 
