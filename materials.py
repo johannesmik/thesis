@@ -51,6 +51,9 @@ class BaseMaterial(object):
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         return texture_id
 
+    def set_basecolor(self, basecolor):
+        self.uniforms['basecolor'] = basecolor
+
     def add_colormap(self, filename):
         self.add_texture('colormap', filename)
         self.uniforms['use_colormap'] = True
@@ -99,8 +102,8 @@ class BaseMaterial(object):
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glTexImage2D(GL_TEXTURE_2D, 0, gl_texture_format, ix, iy, 0, gl_format, gl_type, imagebytes)
 
-        wrap_s = GL_REPEAT if repeat_s else GL_CLAMP
-        wrap_t = GL_REPEAT if repeat_t else GL_CLAMP
+        wrap_s = GL_REPEAT if repeat_s else GL_CLAMP_TO_EDGE
+        wrap_t = GL_REPEAT if repeat_t else GL_CLAMP_TO_EDGE
 
         glEnable(GL_TEXTURE_2D)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s)
