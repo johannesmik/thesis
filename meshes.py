@@ -135,11 +135,9 @@ class TriangleGeometry(Geometry):
 class IcosphereGeometry(Geometry):
     """ Icosphere """
 
-    def __init__(self, subdivisions=2, color=None):
+    def __init__(self, subdivisions=2):
         super(IcosphereGeometry, self).__init__()
         t = (1 + math.sqrt(5.0)) / 2.0
-
-        self.color = color if color is not None else np.array([1, 1, 1])
 
         vertices = np.array([[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
                              [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
