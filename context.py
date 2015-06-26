@@ -82,7 +82,7 @@ class Context:
                         mesh.geometry.vertices.bind()
                         glVertexAttribPointer(shader.locations['position'], 3, GL_FLOAT, False, 3 * 4,
                                               mesh.geometry.vertices)
-                    if mesh.geometry.colors and shader.locations.get('color', -1) != -1:
+                    if hasattr(mesh.geometry, 'color') and mesh.geometry.color and shader.locations.get('color', -1) != -1:
                         glEnableVertexAttribArray(shader.locations['color'])
                         mesh.geometry.colors.bind()
                         glVertexAttribPointer(shader.locations['color'], 3, GL_FLOAT, False, 3 * 4,
@@ -110,7 +110,7 @@ class Context:
                     if mesh.geometry.vertices and shader.locations.get('position', -1) != -1:
                         mesh.geometry.vertices.unbind()
                         glDisableVertexAttribArray(shader.locations['position'])
-                    if mesh.geometry.colors and shader.locations.get('color', -1) != -1:
+                    if hasattr(mesh.geometry, 'color') and mesh.geometry.color and shader.locations.get('color', -1) != -1:
                         mesh.geometry.colors.unbind()
                         glDisableVertexAttribArray(shader.locations['color'])
                     if mesh.geometry.texcoords and shader.locations.get('texcoords', -1) != -1:
@@ -142,14 +142,16 @@ class Context:
         self.fbo = glGenFramebuffers(1)
         self.rbo, self.rbo_depth = glGenRenderbuffers(2)
         glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
+
         # Setup Color Renderbuffer
         glBindRenderbuffer(GL_RENDERBUFFER, self.rbo)
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB16F, self.width, self.height)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB32F, self.width, self.height)
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, self.rbo)
         # Setup Depth Renderbuffer
         glBindRenderbuffer(GL_RENDERBUFFER, self.rbo_depth)
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, self.width, self.height)
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, self.rbo_depth)
+
         glBindRenderbuffer(GL_RENDERBUFFER, 0)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
@@ -235,7 +237,7 @@ class Context:
         glCheckFramebufferStatus(GL_FRAMEBUFFER)
         glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
         glBindRenderbuffer(GL_RENDERBUFFER, self.rbo)
-        self._render(scene, camera)
+        self.render(scene, camera)
         gl_buffer = glReadPixels(0, 0, self.width, self.height, GL_RED, GL_FLOAT)
         image = Image.frombytes(mode="F", size=(self.width, self.height), data=gl_buffer)
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
@@ -282,7 +284,6 @@ class Context:
             light = scene.get_object('Light')
             light.uniforms['position'][0] = 0.1 + light.uniforms['position'][0]
             print light.uniforms['position'][0]
-            print scene.lights[0].uniforms['position'][0]
 
         if event.key.keysym.sym == SDLK_t:
             print scene.meshes[-1]

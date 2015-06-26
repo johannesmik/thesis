@@ -43,16 +43,13 @@ class PointCloud(core.Object3D):
         pass
 
 
-# Todo: self.colors is not used in the shaders?
-# Delete in the shader, or delete here? Alternative is using the materials basecolor
 class Geometry(object):
     def __init__(self):
         # To be initialized in the subclasses
 
-        # Vertices, colors, normals texcoords are all VBOs
+        # Vertices, normals texcoords are all VBOs
         # Indices is a list
         self.vertices = None
-        self.colors = None
         self.normals = None
         self.texcoords = None
         self.indices = None
@@ -126,9 +123,6 @@ class TriangleGeometry(Geometry):
         self.vertices = vbo.VBO(np.array([[0., 1., 0], [-1., -1., 0], [1., -1., 0]], 'float32'),
                                 usage=GL_STATIC_DRAW)
 
-        self.colors = vbo.VBO(np.array([[1, 0, 1], [1, 0, 1], [1, 0, 1]], 'float32'),
-                              usage=GL_STATIC_DRAW)
-
         self.texcoords = vbo.VBO(np.array([[0, 0], [0.5, 1], [1, 0]], 'float32'),
                                  usage=GL_STATIC_DRAW)
 
@@ -153,8 +147,6 @@ class IcosphereGeometry(Geometry):
 
         vertices = normalized(vertices)
 
-        colors = np.array([self.color] * 12, 'float32')
-
         normals = np.array([[-1, t, 0], [1., t, 0], [-1, -t, 0], [1, -t, 0],
                             [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
                             [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]], 'float32')
@@ -173,7 +165,6 @@ class IcosphereGeometry(Geometry):
                 tmp2 = (vertices[indices[j + 1], :] + vertices[indices[j + 2], :])
                 tmp3 = (vertices[indices[j + 2], :] + vertices[indices[j], :])
                 vertices = np.append(vertices, normalized(np.array([tmp1, tmp2, tmp3], 'float32')), axis=0)
-                colors = np.append(colors, np.array([self.color] * 3, 'float32'), axis=0)
                 normals = np.append(normals, np.array([tmp1, tmp2, tmp3], 'float32'), axis=0)
 
                 # Add 4 new faces
@@ -187,7 +178,6 @@ class IcosphereGeometry(Geometry):
         texcoords = np.array([[0, 0]] * vertices.shape[0], 'float32')
 
         self.vertices = vbo.VBO(vertices, usage=GL_STATIC_DRAW)
-        self.colors = vbo.VBO(colors, usage=GL_STATIC_DRAW)
         self.texcoords = vbo.VBO(texcoords, usage=GL_STATIC_DRAW)
         self.normals = vbo.VBO(normals, usage=GL_STATIC_DRAW)
         self.indices = indices
@@ -200,9 +190,6 @@ class SquareGeometry(Geometry):
         Geometry.__init__(self)
         self.vertices = vbo.VBO(np.array([[1., 1., 0], [-1., 1., 0], [-1., -1., 0], [1., -1., 0.]], 'float32'),
                                 usage=GL_STATIC_DRAW)
-
-        self.colors = vbo.VBO(np.array([[0, 0, 0]] * 4, 'float32'),
-                              usage=GL_STATIC_DRAW)
 
         self.texcoords = vbo.VBO(np.array([[1, 1], [0, 1], [0, 0], [1, 0]], 'float32'),
                                  usage=GL_STATIC_DRAW)
@@ -235,7 +222,6 @@ class WaveGeometry(Geometry):
                 indices.extend([offset + i + 1, offset + xvertices + i, offset + xvertices + i + 1][::-1])
 
         self.vertices = vbo.VBO(np.array(vertices, 'float32'), usage=GL_STATIC_DRAW)
-        self.colors = vbo.VBO(np.array([[0, 0, 0]] * xvertices * yvertices, 'float32'), usage=GL_STATIC_DRAW)
         self.texcoords = vbo.VBO(np.array([[0, 0]] * xvertices * yvertices, 'float32'), usage=GL_STATIC_DRAW)
         self.normals = vbo.VBO(np.array(normals, 'float32'), usage=GL_STATIC_DRAW)
         self.indices = indices
