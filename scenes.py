@@ -11,12 +11,13 @@ import cameras
 
 
 class Scene(object):
-    def __init__(self, backgroundcolor=None):
+    def __init__(self, backgroundcolor=None, name="Untitled Scene"):
         self.objects = {}
         self.meshes = []
         self.lights = []
         self.cameras = []
         self.backgroundcolor = backgroundcolor
+        self.name = name
         print "initialized a Scene"
 
     def _add_mesh(self, mesh):
@@ -73,6 +74,28 @@ class SimpleSphere(Scene):
         self.add(sphere)
         self.add(light1)
         self.add(light2)
+
+class SimpleWave(Scene):
+    """ Simple Wave with an Ambient and Directional Light """
+
+    def __init__(self):
+        super(SimpleWave, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+
+        wave_geometry = meshes.WaveGeometry(periodicity=0.5, hscale=0.1)
+        wave_material = materials.LambertianMaterial()
+        wave = meshes.Mesh(name='Wave 1', position=np.array([0, 0, -2]), geometry=wave_geometry,
+                             material=wave_material)
+
+        wave_material.set_basecolor(np.array([1.0, 0.6, 0]))
+
+        light1 = lights.AmbientLight(color=np.array([0.8, 0.8, 0.8, 1]))
+        light2 = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.0)
+        light3 = lights.DirectionalLight(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+
+        self.add(wave)
+        #self.add(light1)
+        self.add(light2)
+        #self.add(light3)
 
 
 class TwoSpheres(Scene):

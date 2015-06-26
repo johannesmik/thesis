@@ -213,6 +213,34 @@ class SquareGeometry(Geometry):
         self.indices = [0, 1, 2, 0, 2, 3]
 
 
+class WaveGeometry(Geometry):
+    """ A wavy plane """
+
+    def __init__(self, periodicity=(2*np.pi), hscale=1, xvertices=100, yvertices=100):
+        Geometry.__init__(self)
+        x = np.linspace(-1, 1, xvertices)
+        y = np.linspace(-1, 1, yvertices)
+        s = (2.0 * np.pi) / periodicity
+
+        vertices = [[i, j, hscale * math.cos(s * math.sqrt(i**2 + j**2))] for j in y for i in x]
+        normals = [[hscale * s * math.sin(s * math.sqrt(i**2 + j**2)) * np.cos(np.arctan2(j, i)),
+                    hscale * s * math.sin(s * math.sqrt(i**2 + j**2)) * np.sin(np.arctan2(j, i)),
+                    1.0] for j in y for i in x]
+
+        indices = []
+        for i in range(xvertices - 1):
+            for j in range(yvertices - 1):
+                offset = j * xvertices
+                indices.extend([offset + i, offset + xvertices + i, offset + i + 1][::-1])
+                indices.extend([offset + i + 1, offset + xvertices + i, offset + xvertices + i + 1][::-1])
+
+        self.vertices = vbo.VBO(np.array(vertices, 'float32'), usage=GL_STATIC_DRAW)
+        self.colors = vbo.VBO(np.array([[0, 0, 0]] * xvertices * yvertices, 'float32'), usage=GL_STATIC_DRAW)
+        self.texcoords = vbo.VBO(np.array([[0, 0]] * xvertices * yvertices, 'float32'), usage=GL_STATIC_DRAW)
+        self.normals = vbo.VBO(np.array(normals, 'float32'), usage=GL_STATIC_DRAW)
+        self.indices = indices
+
+
 class Pointcloud(Geometry):
     """ Base class for Pointcloud like meshes. """
 
