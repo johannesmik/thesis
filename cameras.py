@@ -19,6 +19,43 @@ class Camera(object):
         # Initially, the camera looks in the -Z direction, and up in the Y direction (0, 0, 0)
         self.rotation = rotation if isinstance(rotation, np.ndarray) else np.array([0, 0, 0], 'float')
 
+        self.frames = {}
+
+    def set_frame(self, time, position, rotation):
+        """ Set keyframe. Translation and rotation both 3-vectors. """
+        self.frames[time] = {'rotation' : rotation, 'position' : position}
+
+    def remove_frame(self, time):
+        if self.frames.get(time):
+            self.frames.pop(time)
+
+    def set_current_frame(self, time):
+        """ Set translation and rotation to the values in time. Linearly interpolate between keyframes. """
+        if self.frames.get(time):
+            frame = self.frames.get(time)
+            self.position = frame['position']
+            self.rotation = frame['rotation']
+        elif time < min(self.frames.keys()):
+            # Before the first frame starts
+            frame = self.frames.get(min(self.frames.keys()))
+            self.position = frame['position']
+            self.rotation = frame['rotation']
+        elif time > max(self.frames.keys()):
+            # After the first frame ended
+            frame = self.frames.get(max(self.frames.keys()))
+            self.position = frame['position']
+            self.rotation = frame['rotation']
+        else:
+            # Mix the previous and next frame together
+            timeA = min(self.frames.keys(), key=lambda k: 7000 if -k+time <= 0 else -k+time)
+            timeB = min(self.frames.keys(), key=lambda k: 7000 if k-time <= 0 else k - time)
+            frameA = self.frames[timeA]
+            frameB = self.frames[timeB]
+            factorA = (timeB - time) / float(timeB - timeA)
+            factorB = (time - timeA) / float(timeB - timeA)
+            self.position = factorA * frameA['position'] + factorB * frameB['position']
+            self.rotation = factorA * frameA['rotation'] + factorB * frameB['rotation']
+
     def move_forward(self, length):
         self.position += np.dot(self.rotationmatrix.T, np.array([0, 0, -length, 1]))[0:3]
 

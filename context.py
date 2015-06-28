@@ -359,9 +359,18 @@ if __name__ == '__main__':
     c.print_opengl_info()
 
     scene = scenes.DepthTexture(material="normal")
+    scene = scenes.SimpleSphere()
     camera = cameras.PerspectiveCamera2()
 
+    camera.set_frame(0, position=np.array([0, 0, 0]), rotation=np.array([0, 0, 0]))
+    camera.set_frame(60, position=np.array([0, 0, 2]), rotation=np.array([0, 0, 0]))
+    camera.set_frame(90, position=np.array([2, 0, 0]), rotation=np.array([0, 0.5 *np.pi, 0]))
+    camera.set_frame(120, position=np.array([2, 0, -2]), rotation=np.array([0, 0.5 *np.pi, 0]))
+
     # The Loop
+    t = 0
     running = True
     while running:
+        camera.set_current_frame(t)
         running = c.render(scene, camera)
+        t += 1
