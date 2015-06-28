@@ -201,7 +201,7 @@ class Context:
             self.frames = 0
             SDL_GL_SwapWindow(self.window)
 
-    def screenshot(self, scene, camera, filename):
+    def screenshot(self, scene, camera, filename, verbose=True):
         """
         Takes a screenshot of the current view.
 
@@ -218,13 +218,14 @@ class Context:
         with open(filename, 'w') as f:
             image.save(f)
 
-        print "saved screenshot as '%s'" % filename
+        if verbose:
+            print "saved screenshot as '%s'" % filename
 
         # Clean up
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
-    def screenshot_bw(self, scene, camera, filename):
+    def screenshot_bw(self, scene, camera, filename, verbose=True):
         """
         32 bit float black and white screenshot of the current view.
 
@@ -244,7 +245,8 @@ class Context:
         with open(filename, 'w') as f:
             image.save(f)
 
-        print "saved 32bit bw screenshot as '%s'" % filename
+        if verbose:
+            print "saved 32bit bw screenshot as '%s'" % filename
 
         # Clean up
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
