@@ -1,5 +1,3 @@
-# Calculate the intensity prime (using a point light)
-
 from __future__ import print_function
 import os
 import numpy as np
@@ -45,8 +43,6 @@ def show_image(image, title=None):
     cax = divider.append_axes("right", size=0.15, pad=0.05)
     clb = plt.colorbar(im, cax)
 
-
-
 mod = SourceModule("""
 #include <cuda.h>
 #include "utils.cu"
@@ -57,7 +53,7 @@ texture<float, cudaTextureType2D, cudaReadModeElementType> depth;
 
 __device__ void neighborhood(int2 pos, float *neighborhood)
 {
-  /* returns the 5x5 neighborhood around pos. */
+  /* returns the 5x5 depth neighborhood around pos. */
   for (int i = 0; i < 5; ++i) {
     for (int j = 0; j < 5; ++j) {
       neighborhood[j*5 + i] = tex2D(depth, pos.x -2 + i, pos.y -2 + j);
@@ -68,9 +64,6 @@ __device__ void neighborhood(int2 pos, float *neighborhood)
 extern "C"
 __global__ void normal(float *normal_out)
 {
-  // Constants
-  //const float diff_depth = 0.00001;
-
   // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
   const int y = blockIdx.y * blockDim.y + threadIdx.y;
