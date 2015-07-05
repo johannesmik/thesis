@@ -74,7 +74,7 @@ __global__ void normal(float *normal_out)
   neighborhood(make_int2(x, y), depth_neighborhood);
 
   float3 normal = normal_cross(depth_neighborhood, x, y);
-  float3 normal_c = normal_color(normal);
+  float3 normal_c = normal_colorize(normal);
 
   normal_out[index * 3] = normal_c.x;
   normal_out[index * 3 + 1] = normal_c.y;

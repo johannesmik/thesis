@@ -150,7 +150,7 @@ __device__ float3 pixel_to_camera(int xs, int ys, float z)
 }
 
 extern "C"
-__global__ void intensity_prime(float *normal_out, float *intensity_change)
+__global__ void intensity_prime(float *normal_out, float *intensity_change_out)
 {
   // Constants
   const float diff_depth = 0.00001;
@@ -219,11 +219,11 @@ __global__ void intensity_prime(float *normal_out, float *intensity_change)
     intensity_after[i] = intensity(normal, point_e);
   }
 
-  intensity_change[index] = 0.0;
+  intensity_change_out[index] = 0.0;
   for (int i = 0; i < 4; ++i) {
-    intensity_change[index] = intensity_change[index] + (intensity_after[i] - intensity_before[i]);
+    intensity_change_out[index] = intensity_change[index] + (intensity_after[i] - intensity_before[i]);
   }
-  intensity_change[index] = intensity_change[index] / diff_depth;
+  intensity_change_out[index] = intensity_change_out[index] / diff_depth;
   normal_out[index * 3] = normal_color.x;
   normal_out[index * 3 + 1] = normal_color.y;
   normal_out[index * 3 + 2] = normal_color.z;

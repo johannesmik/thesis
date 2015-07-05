@@ -4,6 +4,7 @@
 #ifndef UTILS_CU
 #define UTILS_CU
 
+
 /* ADDITION */
 
 inline __device__ float2 operator+(float2 a, float2 b) {
@@ -48,6 +49,15 @@ inline __device__ float2 operator-(float2 a) {
 
 inline __device__ float3 operator-(float3 a) {
     return make_float3(-a.x, -a.y, -a.z);
+}
+
+/* EQUALITY */
+inline __device__ bool operator==(float3 a, float3 b) {
+    return (a.x == b.x && a.y == b.y && a.x == b.y);
+}
+
+inline __device__ bool operator!=(float3 a, float3 b) {
+    return (a.x != b.x || a.y != b.y || a.x != b.y);
 }
 
 /* MULTIPLICATION */
@@ -101,9 +111,23 @@ inline __device__ float dist(float3 a, float3 b) {
   return len(b - a);
 }
 
-/* NORMAL COLOR */
+/* CLAMP */
 
-__device__ float3 normal_color(const float3 normal)
+inline __device__ float clamp(const float i, const float a, float b) {
+  return min(max(a, i), b);
+}
+
+inline __device__ float2 clamp(const float2 i, const float a, float b) {
+  return make_float2(min(max(a, i.x), b), min(max(a, i.y), b));
+}
+
+inline __device__ float3 clamp(const float3 i, const float a, float b) {
+  return make_float3(min(max(a, i.x), b), min(max(a, i.y), b), min(max(a, i.z), b));
+}
+
+/* NORMAL COLORIZE */
+
+__device__ float3 normal_colorize(const float3 normal)
 {
   /* Maps normal range (-1, 1) to (0, 1), which is important when normal is visualized in color */
   return (normal + 1.0) / 2.0;
