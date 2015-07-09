@@ -30,6 +30,8 @@ class Light(object):
             elif number_of_values == 4:
                 glUniform4f(location, *uniformvalue)
 
+    def __repr__(self):
+        return self.__class__.__name__ + " (name: " + self.name + ")"
 
 class DirectionalLight(Light):
     def __init__(self, name='Light', position=None, color=None, falloff=None, direction=None):

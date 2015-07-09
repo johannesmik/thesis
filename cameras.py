@@ -21,6 +21,9 @@ class Camera(object):
 
         self.frames = {}
 
+    def __repr__(self):
+        return self.__class__.__name__ + " (name: " + self.name + ")"
+
     def set_frame(self, time, position, rotation):
         """ Set keyframe. Translation and rotation both 3-vectors. """
         self.frames[time] = {'rotation' : rotation, 'position' : position}

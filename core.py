@@ -17,6 +17,9 @@ class Object3D(object):
 
         self.visible = True
 
+    def __repr__(self):
+        return self.__class__.__name__ + " (name: " + self.name + ")"
+
     @property
     def translationmatrix(self):
         translation = np.eye(4)
