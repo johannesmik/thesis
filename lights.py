@@ -1,6 +1,7 @@
 __author__ = 'johannes'
 
 from OpenGL.GL import *
+import re
 import numpy as np
 
 
@@ -9,12 +10,13 @@ class Light(object):
     """
 
     counter = 0
+    registered_names = []
 
     def __init__(self, color):
         self.color = color
         self.uniforms = {}
         self.lighttype = 'baselights'
-        self.name = "Light"
+        self._register_name('Light')
         self.number = 0
 
     def put_up_uniforms(self, shader):
@@ -30,6 +32,24 @@ class Light(object):
             elif number_of_values == 4:
                 glUniform4f(location, *uniformvalue)
 
+    def _register_name(self, name):
+
+        if name in Light.registered_names:
+            oldname = name
+            match = re.search(r'(.*?)(\d+)$', oldname)
+            if match:
+                new_index = int(match.group(2)) + 1
+                newname = "%s%03d" % (match.group(1), new_index)
+            else:
+                newname = oldname + "001"
+            print "Reconsider light name", oldname, " to ", newname
+            self._register_name(newname)
+            return
+
+        else:
+            self.name = name
+            Light.registered_names.append(name)
+
     def set_position(self, position):
         self.uniforms['position'] = [position, 3]
 
@@ -37,9 +57,9 @@ class Light(object):
         return self.__class__.__name__ + " (name: " + self.name + ")"
 
 class DirectionalLight(Light):
-    def __init__(self, name='Light', position=None, color=None, falloff=None, direction=None):
+    def __init__(self, name='Directionallight', position=None, color=None, falloff=None, direction=None):
         self.lighttype = 'directionlights'
-        self.name = name
+        self._register_name(name)
         self.position = position
         self.color = color
         self.falloff = falloff
@@ -52,9 +72,9 @@ class DirectionalLight(Light):
 
 
 class PointLight(Light):
-    def __init__(self, position, color, falloff, name='Light'):
+    def __init__(self, position, color, falloff, name='Pointlight'):
         self.lighttype = 'pointlights'
-        self.name = name
+        self._register_name(name)
         self.uniforms = {'color': [color, 4], 'position': [position, 3], 'falloff': [falloff, 1]}
 
         self.number = PointLight.counter
@@ -62,9 +82,9 @@ class PointLight(Light):
 
 
 class AmbientLight(Light):
-    def __init__(self, color, name='Light'):
+    def __init__(self, color, name='Ambientlight'):
         self.lighttype = 'ambientlights'
-        self.name = name
+        self._register_name(name)
         self.uniforms = {'color': [color, 4]}
 
         self.number = AmbientLight.counter
@@ -72,9 +92,9 @@ class AmbientLight(Light):
 
 
 class SpotLight(Light):
-    def __init__(self, position, direction, cone_angle, color, falloff, name='Light', ):
+    def __init__(self, position, direction, cone_angle, color, falloff, name='Spotlight', ):
         self.lighttype = 'spotlights'
-        self.name = name
+        self._register_name(name)
         self.uniforms = {'color': [color, 4], 'position': [position, 3], 'direction': [direction, 3],
                          'cone_angle': [cone_angle, 1], 'falloff': [falloff, 1]}
 
