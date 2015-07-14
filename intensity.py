@@ -5,108 +5,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from PIL import ImageFilter
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+import os
 
 import pycuda.autoinit
 import pycuda.driver as drv
 from pycuda.compiler import SourceModule
 
-
-def show_image(image):
-
-    image_copy = image.copy()
-
-    fig = plt.figure(figsize=(8, 6))
-    ax = plt.gca()
-
-    # Use grey colormap
-    cm = plt.get_cmap("gray")
-
-    # Show points that fall out of the region [0, 1] in pink
-    cm.set_under('pink')
-    cm.set_over('pink')
-
-    # No ticks on image axis
-    ax.xaxis.set_major_locator(plt.NullLocator())
-    ax.yaxis.set_major_locator(plt.NullLocator())
-
-    minimum = min(image_copy.min(), 0.0)
-    maximum = max(image_copy.max(), 1.0)
-
-    print("maximum", maximum)
-
-    im = plt.imshow(image_copy, interpolation="nearest", cmap=cm, vmin=minimum, vmax=maximum)
-
-    # Set up the colorbar
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size=0.15, pad=0.05)
-    clb = plt.colorbar(im, cax)
-
+import utils
 
 mod = SourceModule("""
 #include <cuda.h>
 //#include <vector_types.h>
-//#include <math.h>
+#include <utils.cu>
 
 texture<float, cudaTextureType2D, cudaReadModeElementType> depth_sensor;
 texture<float, cudaTextureType2D, cudaReadModeElementType> depth_current;
-
-/* ADDITION */
-
-inline __device__ float3 operator+(float3 a, float3 b) {
-  return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
-}
-
-inline __device__ float3 operator+(float3 a, float b) {
-  return make_float3(a.x + b, a.y + b, a.z + b);
-}
-
-/* SUBTRACTION */
-
-inline __device__ float3 operator-(float3 a, float3 b) {
-  return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
-}
-
-/* UNARY MINUS */
-
-inline __device__ float2 operator-(float2 a) {
-    return make_float2(-a.x, -a.y);
-}
-
-inline __device__ float3 operator-(float3 a) {
-    return make_float3(-a.x, -a.y, -a.z);
-}
-
-/* MULTIPLICATION */
-
-inline __device__ float3 operator*(float3 a, float b) {
-  return make_float3(a.x * b, a.y * b, a.z * b);
-}
-
-/* DIVISION */
-
-inline __device__ float3 operator/(float3 a, float b) {
-  return make_float3(a.x / b, a.y / b, a.z / b);
-}
-
-/* DOT, CROSS, LEN, NORMAL */
-
-inline __device__ float dot(float3 a, float3 b) {
-  return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-inline __device__ float3 cross(float3 a, float3 b) {
-  return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-}
-
-inline __device__ float3 normalize(float3 a) {
-  float invLen = 1.0f / sqrtf(dot(a, a));
-  return a * invLen;
-}
-
-inline __device__ float len(float3 a) {
-  return sqrtf(dot(a, a));
-}
 
 /* Light functions */
 
@@ -133,21 +46,6 @@ __device__ float intensity(const float3 &normal, const float3 &w) {
   return attenuation(falloff, len(w)) * albedo * dot(normal, light);
 }
 
-extern "C"
-__device__ float3 pixel_to_camera(int xs, int ys, float z)
-{
-  // Camera coordinates
-  const float fx = 368.096588;
-  const float fy = 368.096588;
-  const float ox = 261.696594;
-  const float oy = 202.522202;
-
-  // From Pixel to Camera Coordinates
-  const float x = -z * (xs - ox) / fx;
-  const float y = - (-z * (ys - oy) / fy);
-
-  return make_float3(x, y, z);
-}
 
 extern "C"
 __global__ void intensity_prime(float *normal_out, float *intensity_change_out)
@@ -221,14 +119,14 @@ __global__ void intensity_prime(float *normal_out, float *intensity_change_out)
 
   intensity_change_out[index] = 0.0;
   for (int i = 0; i < 4; ++i) {
-    intensity_change_out[index] = intensity_change[index] + (intensity_after[i] - intensity_before[i]);
+    intensity_change_out[index] = intensity_change_out[index] + (intensity_after[i] - intensity_before[i]);
   }
   intensity_change_out[index] = intensity_change_out[index] / diff_depth;
   normal_out[index * 3] = normal_color.x;
   normal_out[index * 3 + 1] = normal_color.y;
   normal_out[index * 3 + 2] = normal_color.z;
 }
-""", no_extern_c=True)
+""", no_extern_c=True, include_dirs=[os.getcwd() + '/cuda'])
 # Note: We need the n_extern_c=True so that we can have operator overloading
 
 intensity_prime = mod.get_function("intensity_prime")
@@ -260,8 +158,8 @@ intensity_prime(
     drv.Out(normal), drv.Out(intensity_change),
     block=(16, 8, 1), grid=(32, 53))
 
-show_image(depth_image)
-show_image(intensity_change)
-show_image(normal)
+utils.show_image(depth_image, title='depth image')
+utils.show_image(intensity_change, title='intensity change')
+utils.show_image(normal, title='normal')
 
 plt.show()

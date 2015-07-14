@@ -6,7 +6,6 @@
 
 #include "lights.cu"
 
-
 __device__ float intensity(const float3 &normal, const float3 &w) {
 
   if (w.z == 0)

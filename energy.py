@@ -73,6 +73,8 @@ __device__ float intensity_local(int2 pos, float depth_neighborhood[5][5]) {
 }
 
 __device__ float intensity_local2(int2 pos, float adjustment) {
+  // Calculate the intensity around center, but adjust the depth of the pixel at center
+  // pos: screen coords
 
   float depth_neighborhood[5][5];
   set_neighborhood(pos, depth_neighborhood);
@@ -106,7 +108,6 @@ __device__ float intensity_local3(int2 center_pos, int2 change_pos, float adjust
 
   return intensity_return;
 }
-
 
 extern "C"
 __global__ void energy_prime(float *energy_change_out){
@@ -281,7 +282,6 @@ intensity_current_tex.set_address_mode(0, drv.address_mode.CLAMP)
 intensity_current_tex.set_address_mode(1, drv.address_mode.CLAMP)
 intensity_current_arr = drv.matrix_to_array(intensity_current, 'C')
 intensity_current_tex.set_array(intensity_current_arr)
-
 
 energy_intensity = np.zeros((depth_image.shape[0], depth_image.shape[1]), dtype=np.float32)
 energy_prime = np.zeros((depth_image.shape[0], depth_image.shape[1]), dtype=np.float32)

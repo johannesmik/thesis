@@ -6,6 +6,28 @@
 
 #include "utils.cu"
 
+class Light {
+public:
+  virtual inline __device__ float3 direction(float3 point);
+};
+
+class Pointlight : public Light {
+public:
+  inline __device__ Pointlight(float3 position, float falloff)
+    : position(position), falloff(falloff) { }
+
+  inline __device__ float3 direction(float3 point){
+    if (position - point == make_float3(0, 0, 0))
+      return make_float3(0, 0, 0);
+    else
+      return normalize(position - point);
+  }
+
+private:
+  float3 position;
+  float falloff;
+};
+
 /* DEFINITIONS */
 
 inline __device__ float3 light_directional() {
