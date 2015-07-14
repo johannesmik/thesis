@@ -20,13 +20,13 @@ class Scene(object):
         self.name = name
 
     def _add_mesh(self, mesh):
-        self.add(mesh)
+        self.meshes.append(mesh)
 
     def _add_light(self, light):
-        self.add(light)
+        self.lights.append(light)
 
     def _add_camera(self, camera):
-        self.add(camera)
+        self.cameras.append(camera)
 
     def add(self, obj):
         return self.add_object(obj)
@@ -46,11 +46,11 @@ class Scene(object):
             self.objects[obj.name] = obj
 
         if isinstance(obj, cameras.Camera):
-            self.meshes.append(obj)
+            self._add_mesh(obj)
         if isinstance(obj, lights.Light):
-            self.lights.append(obj)
+            self._add_light(obj)
         if isinstance(obj, meshes.Mesh):
-            self.meshes.append(obj)
+            self._add_mesh(obj)
 
     def remove_object(self, obj):
         if obj.name in self.objects:
