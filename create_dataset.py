@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy as np
 import yaml
 import os
+import sys
 
 import cameras
 import context
@@ -26,8 +27,24 @@ if __name__ == '__main__':
 
     c = context.Context(width=512, height=424, show_framerate=False)
 
-    frames = 5
     verbosity = False
+
+    if len(sys.argv) == 3:
+        frames = sys.argv[1]
+        path = sys.argv[2]
+    else:
+        frames = 20
+        path = "~/dataset"
+
+    path = os.path.expanduser(path)
+
+    # Wait for confirmation
+    user_reply = raw_input("Data will be created in %s. Continue? [y/n]" % (path))
+    if user_reply != 'y' and user_reply != 'Y':
+        exit()
+
+    if not os.path.exists(path):
+        os.makedirs(path)
 
     ## Setup camera movement: Move around (0, 0, -2) in a ccw rotation
     camera = cameras.PerspectiveCamera2()
@@ -65,16 +82,6 @@ if __name__ == '__main__':
     # scene_head.add(pointlight_right)
 
     scenes = [scene_sphere, scene_head]
-    path = "~/dataset"
-    path = os.path.expanduser(path)
-
-    # Wait for confirmation
-    user_reply = raw_input("Data will be created in %s. Continue? [y/n]" % (path))
-    if user_reply != 'y' and user_reply != 'Y':
-        exit()
-
-    if not os.path.exists(path):
-        os.makedirs(path)
 
     for scene in scenes:
 
