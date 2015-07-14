@@ -1,43 +1,38 @@
-# Sphere Generation
+# Dataset creation
 
-Here are two Python scripts, that show a sphere using a simple Lambertian shader.
+## create_dataset.py
 
-The first script, `sphere_glut.py` uses GLUT for OpenGL context management, whereas the second script `sphere_sdl.py`
-uses SDL2 for this reason.
+Creates a dataset (Color, Normal, Depth, IR images) of currently two scenes.
 
-![Application Screenshot](./screenshot.png)
+The camera rotates around the object in a counter-clockwise motion.
 
-## Keyboard 
+Number of frames and path can be given as command parameters, for example:
 
-  - 1, 2, 3: Switch between color, depth and normal shader
-  - Arrow Keys + WASD: Move around
-  - Y: change the lighting direction
-  - T: Toggle visibility of last mesh added
-  - F: make a screenshot, and save file to `screen-depth.png` and `screen-color.png`
-  - G: reserved key for debug information in future
+```bash
+$ python create_dataset.py 200 ~/dataset2
+```
 
-## Prerequisites
+## context.py
+
+This file shows a scene, and you can navigate through it using the keyboard.
+
+### Keyboard shortcuts
+
+  - W, A, S, D, Arrow Keys: Move around
+  - Q, E: Rotate up and down
+  - R, N, V: Switch between color, depth and normal materials
+  - F: make a color screenshot, and save file to `images/screen-color.png`
+  - G: make a bw screenshot, and save file to `images/screen_bw.tiff'
+
+# Prerequisites
 
 Please make sure that you have [Python2](www.python.org) and [PyOpenGL](http://pyopengl.sourceforge.net/) and
-[Numpy](http://www.numpy.org/) and [Pillow](http://python-pillow.github.io/)(a PIL fork) installed.
+[Numpy](http://www.numpy.org/) and [Pillow](http://python-pillow.github.io/)(a PIL fork) and SDL2 installed.
 
 On Ubuntu:
 
 ```bash
-$ apt-get install python python-numpy python-pip python-pil
-$ pip install PyOpenGL PyOpenGL_accelerate
+$ sudo apt-get install python python-numpy python-pip python-pil libsdl2-dev
+$ sudo pip install PyOpenGL PyOpenGL_accelerate
+$ sudo pip install pysdl2
 ```
-Note, maybe you need to execute these commands as root.
-
-
-### Using GLUT version
-According to the [PyOpenGL](http://pyopengl.sourceforge.net/) page, the PyOpenGL package already provides GLUT, so you should be fine.
-
-### Using SDL2 version
-
-For the SDL script you need to install SDL2. Using pip, you can do so quite easily:
-
-```bash
-$ pip install pysdl2
-```
-
