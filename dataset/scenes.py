@@ -233,7 +233,7 @@ class DepthTexture(Scene):
         elif material == "normal":
             square_material = materials.NormalMaterial()
 
-        square_material.add_depthmap('assets/sphere_depth_small.png')
+        square_material.add_depthmap('../assets/sphere_depth.png')
         square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -1.5]), geometry=meshes.SquareGeometry(),
                              material=square_material)
         square.size = 1.5

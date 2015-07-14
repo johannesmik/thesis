@@ -22,7 +22,7 @@ if __name__ == '__main__':
     # Setup the scene
     scene = scenes.Scene(backgroundcolor=np.array([1., .6, 0, 1]))
     square_material = materials.NormalMaterial()
-    square_material.add_depthmap('assets/sphere_depth.tiff')
+    square_material.add_depthmap('../assets/sphere_depth.tiff')
     square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -1.5]), geometry=meshes.SquareGeometry(),
                          material=square_material)
     square.size = 1.0

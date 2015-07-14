@@ -72,9 +72,9 @@ if __name__ == '__main__':
 
     ## Setup Head Scene
     scene_head = scenes.Scene(backgroundcolor=np.array([0, 0, 0, 1]), name="head")
-    head_geometry = meshes.ObjectFile('./assets/humanface.obj')
+    head_geometry = meshes.ObjectFile('../assets/humanface.obj')
     head_material = materials.BlinnPhongMaterial()
-    head_material.add_colormap("./assets/humanface-texture.png")
+    head_material.add_colormap("../assets/humanface-texture.png")
     head = meshes.Mesh(name='Face', position=np.array([0, 0, -2]), geometry=head_geometry, material=head_material)
     scene_head.add(head)
     scene_head.add(ambientlight)
