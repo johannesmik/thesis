@@ -36,18 +36,18 @@ class Camera(object):
         """ Set translation and rotation to the values in time. Linearly interpolate between keyframes. """
         if self.frames.get(time):
             frame = self.frames.get(time)
-            self.position = frame['position']
-            self.rotation = frame['rotation']
+            self.position = frame['position'].copy()
+            self.rotation = frame['rotation'].copy()
         elif time < min(self.frames.keys()):
             # Before the first frame starts
             frame = self.frames.get(min(self.frames.keys()))
-            self.position = frame['position']
-            self.rotation = frame['rotation']
+            self.position = frame['position'].copy()
+            self.rotation = frame['rotation'].copy()
         elif time > max(self.frames.keys()):
             # After the first frame ended
             frame = self.frames.get(max(self.frames.keys()))
-            self.position = frame['position']
-            self.rotation = frame['rotation']
+            self.position = frame['position'].copy()
+            self.rotation = frame['rotation'].copy()
         else:
             # Mix the previous and next frame together
             timeA = min(self.frames.keys(), key=lambda k: 7000 if -k+time <= 0 else -k+time)
@@ -58,6 +58,12 @@ class Camera(object):
             factorB = (time - timeA) / float(timeB - timeA)
             self.position = factorA * frameA['position'] + factorB * frameB['position']
             self.rotation = factorA * frameA['rotation'] + factorB * frameB['rotation']
+
+    def add_noise_position(self, variation):
+        self.position += np.random.normal(loc=0.0, scale=variation, size=(3))
+
+    def add_noise_rotation(self, variation):
+        self.rotation += np.random.normal(loc=0.0, scale=variation, size=(3))
 
     def move_forward(self, length):
         self.position += np.dot(self.rotationmatrix.T, np.array([0, 0, -length, 1]))[0:3]
