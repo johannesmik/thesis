@@ -26,17 +26,15 @@ if __name__ == '__main__':
 
     c = context.Context(width=512, height=424, show_framerate=False)
 
-    ## Setup camera movement
+    frames = 5
+
+    ## Setup camera movement: Move around (0, 0, -2) in a ccw rotation
     camera = cameras.PerspectiveCamera2()
     r = 2.0
     w = 0.0
-    for t in range(270):
-        if t < 90:
-            # Move to the left
-            w -= 0.5 * np.pi / 90.
-        else:
-            # Move to the right
-            w += 0.5 * np.pi / 90.
+    for t in range(frames):
+        w = 2 * t * np.pi / (frames - 1)
+        print (w / np.pi)
         camera.set_frame(t, position=np.array([r * np.sin(w), 0, r * np.cos(w) -2]), rotation=np.array([0, w, 0]))
 
 
@@ -82,7 +80,7 @@ if __name__ == '__main__':
         stripped_name = scene.name.replace(' ', '')
 
         # Color
-        for t in range(270):
+        for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
             save_yaml("%s/%s_%04d_camera.yaml" % (path, stripped_name, t), scene, camera, t, verbose=False)
@@ -91,7 +89,7 @@ if __name__ == '__main__':
         # Normal
         for mesh in scene.meshes:
             mesh.material = materials.NormalMaterial()
-        for t in range(270):
+        for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
             c.screenshot(scene, camera, "%s/%s_%04d_normal.tiff" % (path, stripped_name, t), verbose=False)
@@ -99,7 +97,7 @@ if __name__ == '__main__':
         # Depth
         for mesh in scene.meshes:
             mesh.material = materials.DepthMaterial()
-        for t in range(270):
+        for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
             c.screenshot_bw(scene, camera, "%s/%s_%04d_depth.tiff" % (path, stripped_name, t), verbose=False)
@@ -109,7 +107,7 @@ if __name__ == '__main__':
         scene.add(ir_light)
         for mesh in scene.meshes:
             mesh.material = materials.LambertianMaterial()
-        for t in range(270):
+        for t in range(frames):
             camera.set_current_frame(t)
             ir_light.set_position(camera.position)
             c.render(scene, camera)
