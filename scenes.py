@@ -18,7 +18,6 @@ class Scene(object):
         self.cameras = []
         self.backgroundcolor = backgroundcolor
         self.name = name
-        print "initialized a Scene"
 
     def _add_mesh(self, mesh):
         self.add(mesh)
@@ -52,6 +51,32 @@ class Scene(object):
             self.lights.append(obj)
         if isinstance(obj, meshes.Mesh):
             self.meshes.append(obj)
+
+    def remove_object(self, obj):
+        if obj.name in self.objects:
+            # Object found
+            self.objects.pop(obj.name)
+            self.cameras = [y for y in self.cameras if y != obj]
+            self.lights = [y for y in self.lights if y != obj]
+            self.meshes = [y for y in self.meshes if y != obj]
+        else:
+            print "object ", obj.name, " not found in scene (tried to remove object)."
+
+    def remove_object_by_name(self, name):
+        if name in self.objects:
+            # Object found
+            self.objects.pop(name)
+            self.cameras = [y for y in self.cameras if y.name != name]
+            self.lights = [y for y in self.lights if y.name != name]
+            self.meshes = [y for y in self.meshes if y.name != name]
+        else:
+            print "object ", name, " not found in scene (tried to remove object)."
+
+    def remove_lights(self):
+        """ Removes all lights from the scene. """
+        for light in self.lights:
+            self.objects.pop(light.name)
+        self.lights = []
 
     def get_object(self, name):
         return self.objects.get(name, None)
