@@ -27,6 +27,7 @@ if __name__ == '__main__':
     c = context.Context(width=512, height=424, show_framerate=False)
 
     frames = 5
+    verbosity = False
 
     ## Setup camera movement: Move around (0, 0, -2) in a ccw rotation
     camera = cameras.PerspectiveCamera2()
@@ -83,8 +84,8 @@ if __name__ == '__main__':
         for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
-            save_yaml("%s/%s_%04d_camera.yaml" % (path, stripped_name, t), scene, camera, t, verbose=False)
-            c.screenshot(scene, camera, "%s/%s_%04d_color.tiff" % (path, stripped_name, t), verbose=False)
+            save_yaml("%s/%s_%04d_camera.yaml" % (path, stripped_name, t), scene, camera, t, verbose=verbosity)
+            c.screenshot(scene, camera, "%s/%s_%04d_color.tiff" % (path, stripped_name, t), verbose=verbosity)
 
         # Normal
         for mesh in scene.meshes:
@@ -92,7 +93,7 @@ if __name__ == '__main__':
         for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
-            c.screenshot(scene, camera, "%s/%s_%04d_normal.tiff" % (path, stripped_name, t), verbose=False)
+            c.screenshot(scene, camera, "%s/%s_%04d_normal.tiff" % (path, stripped_name, t), verbose=verbosity)
 
         # Depth
         for mesh in scene.meshes:
@@ -100,7 +101,7 @@ if __name__ == '__main__':
         for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
-            c.screenshot_bw(scene, camera, "%s/%s_%04d_depth.tiff" % (path, stripped_name, t), verbose=False)
+            c.screenshot_bw(scene, camera, "%s/%s_%04d_depth.tiff" % (path, stripped_name, t), verbose=verbosity)
 
         # IR
         scene.remove_lights()
@@ -111,4 +112,4 @@ if __name__ == '__main__':
             camera.set_current_frame(t)
             ir_light.set_position(camera.position)
             c.render(scene, camera)
-            c.screenshot_bw(scene, camera, "%s/%s_%04d_ir.tiff" % (path, stripped_name, t), verbose=False)
+            c.screenshot_bw(scene, camera, "%s/%s_%04d_ir.tiff" % (path, stripped_name, t), verbose=verbosity)
