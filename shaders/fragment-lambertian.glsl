@@ -18,10 +18,10 @@ in vec3 position_c;
 out vec4 out_color;
 out vec4 out_normal;
 
-#define MAX_AMBIENT_LIGHTS 2
-#define MAX_DIRECTION_LIGHTS 2
-#define MAX_POINT_LIGHTS 2
-#define MAX_SPOT_LIGHTS 2
+#define MAX_AMBIENT_LIGHTS 5
+#define MAX_DIRECTION_LIGHTS 5
+#define MAX_POINT_LIGHTS 5
+#define MAX_SPOT_LIGHTS 5
 
 struct AmbientLight
 {

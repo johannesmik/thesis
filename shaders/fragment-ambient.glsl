@@ -9,7 +9,7 @@ in vec3 position_c;
 
 out vec4 out_color;
 
-#define MAX_AMBIENT_LIGHTS 3
+#define MAX_AMBIENT_LIGHTS 5
 
 struct AmbientLight
 {
