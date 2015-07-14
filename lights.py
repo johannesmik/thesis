@@ -30,6 +30,9 @@ class Light(object):
             elif number_of_values == 4:
                 glUniform4f(location, *uniformvalue)
 
+    def set_position(self, position):
+        self.uniforms['position'] = [position, 3]
+
     def __repr__(self):
         return self.__class__.__name__ + " (name: " + self.name + ")"
 
