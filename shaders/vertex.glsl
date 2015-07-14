@@ -1,23 +1,28 @@
-#version 120
+#version 130
 
 attribute vec3 position;
-attribute vec3 color;
 attribute vec2 texcoords;
 attribute vec3 normal;
 
 uniform mat4 MMatrix;
-uniform mat4 PMatrix;
 uniform mat4 VMatrix;
+uniform mat4 PMatrix;
 
-varying vec4 normal0;
-varying vec2 texcoords0;
-varying vec4 basecolor;
+out vec3 normal0;
+out vec2 texcoords0;
+out vec3 position_w;
+out vec3 position_c;
 
 void main() {
     // Passing variables to fragment shader
-    basecolor = clamp(vec4(color, 1), 0, 1);
-    normal0 = vec4(normalize(normal), 0);
+    normal0 = normalize(normal);
     texcoords0 = texcoords;
+
+    // Position in World Space
+    position_w = (MMatrix * vec4(position, 1)).xyz;
+
+    // Position in Camera Space
+    position_c = (VMatrix * MMatrix * vec4(position, 1)).xyz;
 
     // Calculate position in Clip space
     gl_Position = PMatrix * VMatrix * MMatrix * vec4(position, 1);
