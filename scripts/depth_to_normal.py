@@ -78,6 +78,28 @@ def normals_from_depth_sobel2(depth):
     normals[:, :, 3] = 1
     return normals
 
+def normals_from_depth_sobel_scaled(depth):
+    """ Calculate the normals with sobel """
+    # TODO not correct yet
+    heigth, width = depth.shape
+    normals = np.ones((heigth, width, 4))
+
+    depth = 50 + (50 * 10 *  depth / 255.)
+
+    normals[:, :, 0] = 1 * depth * sobel_v(depth)
+    normals[:, :, 1] = -1 * depth * sobel_h(depth)
+    normals[:, :, 2] = 50.
+
+    sobel = sobel_v(depth)
+
+    # Normalize such that the length is one, and the values range between -1 and 1
+    normals = 1 + normals / np.linalg.norm(normals[:, :, :3], axis=2)[:, :, np.newaxis]
+    normals = normals / 2.
+    normals = normals * 255.
+    normals[:, :, 3] = 255.
+
+    return normals
+
 
 def normals_from_depth_sobel3(depth):
     height, width = depth.shape
@@ -87,14 +109,16 @@ def normals_from_depth_sobel3(depth):
 if __name__ == '__main__':
     # Sphere from Image
 
-    depth1 = open_as_array("images/reconstruction-scene8/depth.png")
-    normal1 = open_as_array("images/reconstruction-scene8/normal.png")
+    depth1 = open_as_array("../images/reconstruction-scene8/depth.png")
+    normal1 = open_as_array("../images/reconstruction-scene8/normal.png")
 
     normal_pcl = normals_from_depth_pcl(depth1)
     normal_pcl = ((normal_pcl + 1) / 2.) * 255
 
     normal_sobel = normals_from_depth_sobel2(depth1)
     normal_sobel = ((normal_sobel + 1) / 2.) * 255
+
+    normal_sobel_scaled = normals_from_depth_sobel_scaled(depth1)
 
     plt.subplot(3, 3, 1)
     plt.title("Depthmap")
@@ -109,6 +133,11 @@ if __name__ == '__main__':
     plt.subplot(3, 3, 3)
     plt.title("Normal (sobel)")
     plt.imshow(normal_sobel.astype('uint8')[:, :, :3], cmap=plt.cm.gray, interpolation='nearest')
+    plt.colorbar()
+
+    plt.subplot(3, 3, 6)
+    plt.title("Normal sobel scaled")
+    plt.imshow(normal_sobel_scaled.astype('uint8')[:, :, :3], cmap=plt.cm.gray, interpolation='nearest')
     plt.colorbar()
 
     # Sphere from OpenGL context
@@ -158,5 +187,5 @@ if __name__ == '__main__':
     # plt.imshow(normal_sobel3.astype('uint8')[:,:,:3], cmap=plt.cm.gray, interpolation='nearest')
     # plt.colorbar()
 
-    plt.savefig('results/depth_to_normal.png', dpi=300)
+    plt.savefig('../results/depth_to_normal.png', dpi=300)
     plt.show()
