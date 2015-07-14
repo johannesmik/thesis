@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Author: Johannes
 
+import os
+import re
 import sys
 import time
 
@@ -201,6 +203,23 @@ class Context:
             self.frames = 0
             SDL_GL_SwapWindow(self.window)
 
+    def _unique_filename(self, filename):
+
+        # Ensure that path exists and that filename didn't existed before
+        filename = os.path.expanduser(filename)
+        path = os.path.dirname(filename)
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        if os.path.exists(filename):
+            match = re.search(r'(.*?)(\d*)(\..+?)$', filename)
+            num = int(match.group(2)) if match.group(2) != '' else 0
+            new_index = num + 1
+            newname = "%s%03d%s" % (match.group(1), new_index, match.group(3))
+            return self._unique_filename(newname)
+
+        return filename
+
     def screenshot(self, scene, camera, filename, verbose=True):
         """
         Takes a screenshot of the current view.
@@ -210,6 +229,7 @@ class Context:
         :return: None
         """
 
+        filename = self._unique_filename(filename)
         self._render(scene, camera)
 
         gl_buffer = glReadPixels(0, 0, self.width, self.height, GL_RGB, GL_UNSIGNED_BYTE)
@@ -233,6 +253,8 @@ class Context:
         :type filename: String
         :return: None
         """
+
+        filename = self._unique_filename(filename)
 
         # Draw to renderbuffer
         glCheckFramebufferStatus(GL_FRAMEBUFFER)
@@ -302,10 +324,10 @@ class Context:
                 mesh.material = materials.NormalMaterial()
         # Screenshots
         if event.key.keysym.sym == SDLK_f:
-            self.screenshot(scene, camera, 'screenshots/screen_color.png')
+            self.screenshot(scene, camera, '~/screenshots/screen_color.png')
 
         if event.key.keysym.sym == SDLK_g:
-            self.screenshot_bw(scene, camera, 'screenshots/screen_bw.tiff')
+            self.screenshot_bw(scene, camera, '~/screenshots/screen_bw.tiff')
 
         if event.key.keysym.sym == SDLK_p:
             print "Debug info (Key g)"
