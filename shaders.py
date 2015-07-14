@@ -5,7 +5,7 @@ from OpenGL.GL import shaders
 
 
 class Shader:
-    def __init__(self, vertexshader, fragmentshader, attributes, uniforms):
+    def __init__(self, vertexshader, fragmentshader, attributes, uniforms, verbose=False):
         """ Initialize the Shader and get locations for the GLSL variables """
 
         with open(vertexshader) as f:
@@ -19,7 +19,7 @@ class Shader:
             location = glGetAttribLocation(self.program, attribute)
             if location is None:
                 raise Exception("Could not get location of attribute %s" % attribute)
-            elif location == -1:
+            elif location == -1 and verbose:
                 print "Attribute %s is not used in the shader (%s or %s)" % (attribute, vertexshader, fragmentshader)
             self.attribute_locations[attribute] = location
 
@@ -28,7 +28,7 @@ class Shader:
             location = glGetUniformLocation(self.program, uniform)
             if location is None:
                 raise Exception("Could not get location of uniform %s" % uniform)
-            elif location == -1:
+            elif location == -1 and verbose:
                 print "Uniform %s is not used in the shader (%s or %s)" % (uniform, vertexshader, fragmentshader)
             self.uniform_locations[uniform] = location
 
