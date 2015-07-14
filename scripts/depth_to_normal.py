@@ -109,8 +109,8 @@ def normals_from_depth_sobel3(depth):
 if __name__ == '__main__':
     # Sphere from Image
 
-    depth1 = open_as_array("../images/reconstruction-scene8/depth.png")
-    normal1 = open_as_array("../images/reconstruction-scene8/normal.png")
+    depth1 = open_as_array("../assets/testimages/sphere-depth.png")
+    normal1 = open_as_array("../assets/testimages/sphere-normal.png")
 
     normal_pcl = normals_from_depth_pcl(depth1)
     normal_pcl = ((normal_pcl + 1) / 2.) * 255

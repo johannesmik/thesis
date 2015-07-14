@@ -302,10 +302,10 @@ class Context:
                 mesh.material = materials.NormalMaterial()
         # Screenshots
         if event.key.keysym.sym == SDLK_f:
-            self.screenshot(scene, camera, 'images/screen_color.png')
+            self.screenshot(scene, camera, 'screenshots/screen_color.png')
 
         if event.key.keysym.sym == SDLK_g:
-            self.screenshot_bw(scene, camera, 'images/screen_bw.tiff')
+            self.screenshot_bw(scene, camera, 'screenshots/screen_bw.tiff')
 
         if event.key.keysym.sym == SDLK_p:
             print "Debug info (Key g)"
