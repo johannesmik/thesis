@@ -7,21 +7,21 @@
 #include "utils.cu"
 #include "eigen.cu"
 
-__device__ float3 normal_cross(const float depth_neighborhood[5][5], const int x_n, const int y_n)
+__device__ float3 normal_cross(const float depth_neighborhood[5][5], const int2 pos)
 {
   /*
      Calculates the normals in the midpoint (2, 2) in a 5x5 neighborhood using a cross product
-     x_n, y_n: pixel coordinates of the midpoint
+     pos.x, pos.y: pixel coordinates of the midpoint
   */
 
   if (depth_neighborhood[3][3] == 0)
     return make_float3(0, 0, 0);
 
   // Find the neighbors of the neighbor in camera coords
-  const float3 point_b = pixel_to_camera(x_n, y_n-1, depth_neighborhood[2][3]);
-  const float3 point_d = pixel_to_camera(x_n-1, y_n, depth_neighborhood[3][2]);
-  const float3 point_f = pixel_to_camera(x_n+1, y_n, depth_neighborhood[3][4]);
-  const float3 point_h = pixel_to_camera(x_n, y_n+1, depth_neighborhood[4][3]);
+  const float3 point_b = pixel_to_camera(pos.x, pos.y-1, depth_neighborhood[2][3]);
+  const float3 point_d = pixel_to_camera(pos.x-1, pos.y, depth_neighborhood[3][2]);
+  const float3 point_f = pixel_to_camera(pos.x+1, pos.y, depth_neighborhood[3][4]);
+  const float3 point_h = pixel_to_camera(pos.x, pos.y+1, depth_neighborhood[4][3]);
 
   // Calculate Normal
   const float3 vectorDF = point_f - point_d;
@@ -30,18 +30,18 @@ __device__ float3 normal_cross(const float depth_neighborhood[5][5], const int x
   return normal;
 }
 
-__device__ float3 normal_pca(const float depth_neighborhood[5][5], const int x_n, const int y_n)
+__device__ float3 normal_pca(const float depth_neighborhood[5][5], const int2 pos)
 {
   /*
     Calculate the normal in the midpoint (2, 2) in a 5x5 neighborhood using PCA
-    x_n, y_n: pixel coordinates of the midpoint
+    pos.x, pos.y: pixel coordinates of the midpoint
     Idea from: http://pointclouds.org/documentation/tutorials/normal_estimation.php
   */
 
   float3 world_points[25];
   for (int i = 0; i < 5; ++i)
     for (int j = 0; j < 5; ++j)
-      world_points[j*5 + i] = pixel_to_camera(x_n - 2 + i, y_n - 2 + j, depth_neighborhood[j][i]);
+      world_points[j*5 + i] = pixel_to_camera(pos.x - 2 + i, pos.y - 2 + j, depth_neighborhood[j][i]);
 
   float3 center = world_points[12];
 

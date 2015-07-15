@@ -8,7 +8,7 @@
 
 class Light {
 public:
-  virtual inline __device__ float3 direction(float3 point);
+  virtual inline __device__ float3 direction(float3 point) = 0;
 };
 
 class Pointlight : public Light {

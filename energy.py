@@ -9,39 +9,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import pycuda.autoinit
 import pycuda.driver as drv
 from pycuda.compiler import SourceModule
-
-def show_image(image, title=None):
-
-    image_copy = image.copy()
-
-    fig = plt.figure(figsize=(8, 6))
-    ax = plt.gca()
-
-    # Use grey colormap
-    cm = plt.get_cmap("gray")
-
-    # Show points that fall out of the region [0, 1] in pink
-    cm.set_under('pink')
-    cm.set_over('pink')
-
-    # No ticks on image axis
-    ax.xaxis.set_major_locator(plt.NullLocator())
-    ax.yaxis.set_major_locator(plt.NullLocator())
-
-    minimum = min(image_copy.min(), 0.0)
-    maximum = max(image_copy.max(), 1.0)
-
-    print("Show Image (", title ,"): Chosen min/max", minimum, maximum, " Real min/max", image_copy.min(), image_copy.max())
-
-    if title:
-        plt.title(title)
-
-    im = plt.imshow(image_copy, interpolation="nearest", cmap=cm, vmin=minimum, vmax=maximum)
-
-    # Set up the colorbar
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size=0.15, pad=0.05)
-    clb = plt.colorbar(im, cax)
+import utils
 
 mod = SourceModule("""
 #include <cuda.h>
@@ -54,9 +22,11 @@ texture<float, cudaTextureType2D, cudaReadModeElementType> intensity_current;
 texture<float, cudaTextureType2D, cudaReadModeElementType> ir_intensity;
 texture<float, cudaTextureType2D, cudaReadModeElementType> ir_intensity_sensor;
 
-__device__ void set_neighborhood(int2 pos, float neighborhood[5][5])
+__device__ void set_depth_neighborhood(int2 pos, float neighborhood[5][5])
 {
   /* returns the 5x5 depth neighborhood around pos. */
+  /* Loads texture memory into global memory (slow) */
+
   for (int i = 0; i < 5; ++i) {
     for (int j = 0; j < 5; ++j) {
       neighborhood[j][i] = tex2D(depth, pos.x -2 + i, pos.y -2 + j);
@@ -64,49 +34,36 @@ __device__ void set_neighborhood(int2 pos, float neighborhood[5][5])
   }
 }
 
-__device__ float intensity_local(int2 pos, float depth_neighborhood[5][5]) {
-  // Calculate the intensity at the midpoint of 5x5 depth neighborhood around pos
-
-  float3 normal = normal_pca(depth_neighborhood, pos.x, pos.y);
-  float z = tex2D(depth, pos.x, pos.y);
-  return intensity(normal, pixel_to_camera(pos.x, pos.y, z));
-}
-
-__device__ float intensity_local2(int2 pos, float adjustment) {
-  // Calculate the intensity around center, but adjust the depth of the pixel at center
-  // pos: screen coords
-
-  float depth_neighborhood[5][5];
-  set_neighborhood(pos, depth_neighborhood);
-
-  // Adjust center
-  depth_neighborhood[3][3] += adjustment;
-  const float z = depth_neighborhood[3][3];
-
-  const float3 normal = normal_cross(depth_neighborhood, pos.x, pos.y);
-  const float intensity_return = intensity(normal, pixel_to_camera(pos.x, pos.y, z));
-
-  return intensity_return;
-}
-
-__device__ float intensity_local3(int2 center_pos, int2 change_pos, float adjustment){
+__device__ float intensity_local(int2 center_pos, int2 change_pos, float adjustment){
 
   // Calculate the intensity around center, but adjust the depth of the pixel at change_pos
   // Center_pos: screen coords
   // Change_pos: screen coords
 
   float depth_neighborhood[5][5];
-  set_neighborhood(center_pos, depth_neighborhood);
+  set_depth_neighborhood(center_pos, depth_neighborhood);
   const float z = depth_neighborhood[3][3];
 
   // Adjust
   depth_neighborhood[change_pos.y - center_pos.y + 2][change_pos.x - center_pos.x + 2] += adjustment;
   // TODO: assure that indices are not violated
 
-  const float3 normal = normal_cross(depth_neighborhood, center_pos.x, center_pos.y);
+  const float3 normal = normal_cross(depth_neighborhood, center_pos);
   const float intensity_return = intensity(normal, pixel_to_camera(center_pos.x, center_pos.y, z));
 
   return intensity_return;
+}
+
+
+inline __device__ float intensity_local(int2 pos) {
+  // Calculate the intensity at the midpoint of 5x5 depth neighborhood around pos
+  return intensity_local(pos, pos, 0.0);
+}
+
+inline __device__ float intensity_local(int2 pos, float adjustment) {
+  // Calculate the intensity around center, but adjust the depth of the pixel at center
+  // pos: screen coords
+  return intensity_local(pos, pos, adjustment);
 }
 
 extern "C"
@@ -140,7 +97,7 @@ __global__ void energy_prime(float *energy_change_out){
     for (int j = 0; j < 5; ++j) {
       int2 center = make_int2(x + i - 2, y + j - 2);
       int2 change = make_int2(x, y);
-      intensity_after[j][i] = intensity_local3(center, change, h);
+      intensity_after[j][i] = intensity_local(center, change, h);
     }
   }
 
@@ -169,7 +126,7 @@ __global__ void intensity_image(float *intensity_out)
   const int elementPitch = blockDim.x * gridDim.x;
   const int index = y * elementPitch + x;
 
-  intensity_out[index] = intensity_local2(make_int2(x, y), 0.0);
+  intensity_out[index] = intensity_local(make_int2(x, y), 0.0);
 }
 
 extern "C"
@@ -209,13 +166,13 @@ __global__ void energy(float *energy_intensity_out, float *intensity_out, float3
   const int index = y * elementPitch + x;
 
   float depth_neighborhood[5][5];
-  set_neighborhood(make_int2(x, y), depth_neighborhood);
+  set_depth_neighborhood(make_int2(x, y), depth_neighborhood);
 
   //float intensity_test = intensity_local(make_int2(x, y), depth_neighborhood);
-  //float intensity_test = intensity_local2(make_int2(x, y), 0.5);
-  float intensity_test = intensity_local3(make_int2(x, y), make_int2(x + 1, y), 0.01);
+  //float intensity_test = intensity_local(make_int2(x, y), 0.5);
+  float intensity_test = intensity_local(make_int2(x, y), make_int2(x + 1, y), 0.01);
 
-  float3 normal = normal_pca(depth_neighborhood, x, y);
+  float3 normal = normal_pca(depth_neighborhood, make_int2(x, y));
   float3 normal_c = normal_colorize(normal);
 
   float intensity_given = tex2D(ir_intensity, x, y);
@@ -312,12 +269,12 @@ for i in range(1):
     #     drv.In(normal), drv.Out(energy_normal),
     #     block=(16, 8, 1), grid=(32, 53))
 
-show_image(energy_prime, title="Energy Prime")
-#show_image(ir_intensity_image, title="IR Intensity Image")
-#show_image(energy_intensity, title="Energy Intensity")
-# show_image(energy_normal, title="Energy Normal")
-# show_image(intensity, title="Intensity")
-# show_image(normal, title="Normal")
+utils.show_image(energy_prime, title="Energy Prime")
+#utils.show_image(ir_intensity_image, title="IR Intensity Image")
+#utils.show_image(energy_intensity, title="Energy Intensity")
+# utils.show_image(energy_normal, title="Energy Normal")
+# utils.show_image(intensity, title="Intensity")
+# utils.show_image(normal, title="Normal")
 print("energy:", energy_intensity.sum())
 
 plt.show()

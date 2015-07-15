@@ -134,7 +134,7 @@ __device__ float3 normal_colorize(const float3 normal)
 }
 
 /* PIXEL TO CAMERA */
-
+// TODO rename to pixel_to_camera_kinect
 __device__ float3 pixel_to_camera(int xs, int ys, float z)
 {
   /*
