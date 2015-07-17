@@ -33,11 +33,11 @@ def read_blob(blob_filename, blob_image_type):
     if blob_image_type == "depth":
         a = a / 4500.0
         a = np.clip(a, 0, 1) * 255
-        a = a.astype(np.int8)
+        a = a.astype(np.uint8)
     if blob_image_type == "ir":
         a = a / 20000.0
         a = np.clip(a, 0, 1) * 255
-        a = a.astype(np.int8)
+        a = a.astype(np.uint8)
 
     return a
 
