@@ -32,14 +32,19 @@ def read_blob(blob_filename, blob_image_type):
     if blob_image_type == "color":
         # Swaps BGRA to RGBA
         a[:, :, [0, 1, 2, 3]] = a[:, :, [2, 1, 0, 3]]
+        a = a.astype(np.float32)
+        a = a / 255.0
+
     if blob_image_type == "depth":
         a = a / 4500.0
-        a = np.clip(a, 0, 1) * 255
-        a = a.astype(np.uint8)
+        a = np.clip(a, 0, 1)
+        #a *= 255
+        #a = a.astype(np.uint8)
     if blob_image_type == "ir":
         a = a / 20000.0
-        a = np.clip(a, 0, 1) * 255
-        a = a.astype(np.uint8)
+        a = np.clip(a, 0, 1)
+        #a *= 255
+        #a = a.astype(np.uint8)
 
     return a
 
