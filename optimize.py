@@ -1,4 +1,8 @@
 from __future__ import print_function
+
+# Todo Refactor this, especially the function names and arguments to make sense, otherwise it's a mess to debug
+# FIXME
+
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -53,7 +57,6 @@ __device__ float intensity_local(int2 center_pos, int2 change_pos, float adjustm
 
   return intensity_return;
 }
-
 
 inline __device__ float intensity_local(int2 pos) {
   // Calculate the intensity at the midpoint of 5x5 depth neighborhood around pos
@@ -124,7 +127,7 @@ __global__ void intensity_image(float *intensity_out)
   const int elementPitch = blockDim.x * gridDim.x;
   const int index = y * elementPitch + x;
 
-  intensity_out[index] = intensity_local(make_int2(x, y), 0.0);
+  intensity_out[index] = intensity_local(make_int2(x, y));
 }
 
 extern "C"
@@ -187,7 +190,14 @@ class Optimizer(object):
 
     def __init__(self, depth_sensor_filename, ir_sensor_filename):
 
-        eps = 0.0001
+        self.eps = 0.0001
+        self.max_iterations = 5
+
+        self.iteration_counter = 0
+
+        # Counter for debug reasons
+        # Todo Delete at sometime :)
+        self.debug_counter = 0
 
         # Setup CUDA
         self.energy_function = mod.get_function("energy")
@@ -196,14 +206,14 @@ class Optimizer(object):
         self.intensity_function = mod.get_function("intensity_image")
 
         # Setup and Upload texture Depth_sensor
-        depth_sensor_image = Image.open(depth_sensor_filename)
-        depth_sensor_image = np.asarray(depth_sensor_image, dtype=np.float32) * 10
-        depth_sensor_tex = mod.get_texref('depth_sensor')
-        depth_sensor_tex.set_address_mode(0, drv.address_mode.CLAMP)
-        depth_sensor_tex.set_address_mode(1, drv.address_mode.CLAMP)
-        depth_sensor_arr = drv.matrix_to_array(depth_sensor_image, 'C')
-        depth_sensor_tex.set_array(depth_sensor_arr)
-        self.shape = depth_sensor_image.shape
+        self.depth_sensor_image = Image.open(depth_sensor_filename)
+        self.depth_sensor_image = np.asarray(self.depth_sensor_image, dtype=np.float32) * 10
+        self.depth_sensor_tex = mod.get_texref('depth_sensor')
+        self.depth_sensor_tex.set_address_mode(0, drv.address_mode.CLAMP)
+        self.depth_sensor_tex.set_address_mode(1, drv.address_mode.CLAMP)
+        self.depth_sensor_arr = drv.matrix_to_array(self.depth_sensor_image, 'C')
+        self.depth_sensor_tex.set_array(self.depth_sensor_arr)
+        self.shape = self.depth_sensor_image.shape
 
         # Setup and Upload texture IR_sensor
         self.ir_sensor_image = Image.open(ir_sensor_filename)
@@ -240,13 +250,19 @@ class Optimizer(object):
     def add_noise(self, image, mu=0.0, sigma=0.0):
         image = image + sigma * np.random.randn(*image.shape).astype(np.float32) + mu
 
-    def callback(self):
-        print('callback')
+    def callback(self, xk):
+        self.iteration_counter += 1
+        print('callback', self.iteration_counter)
 
     def energy(self, depth_fimage_current):
         """
          Calculate energy(depth_image_current)
         """
+        # Todo write this, otherwise it won't optimize I think
+
+        # Fixme obviously this is wrong
+        print ('current energy: ', -depth_fimage_current.max())
+        return -depth_fimage_current.max()
 
     def energy_prime(self, depth_fimage_current):
         """
@@ -261,24 +277,29 @@ class Optimizer(object):
               block=(16, 8, 1), grid=(32, 53))
 
         # Update IR current
-        ir = drv.matrix_to_array(ir, 'C')
-        self.ir_current_tex.set_array(ir)
+        ir_arr = drv.matrix_to_array(ir, 'C')
+        self.ir_current_tex.set_array(ir_arr)
 
         self.energy_prime_function(
               drv.Out(energy_prime),
               block=(16, 8, 1), grid=(32, 53))
-
         return energy_prime.flatten()
 
     def optimize(self, depth_image_start):
         ' Calls fmin_cg '
-        xopt, fopt, func_calls, grad_calls, warnflag = optimize.fmin_cg(self.energy, depth_image_start.flatten(),
-                                                                        epsilon=1, maxiter=self.max_iterations,
-                                                                        callback=self.callback, full_output=True)
 
+        self.iteration_counter = 0
+
+        xopt, fopt, func_calls, grad_calls, warnflag = optimize.fmin_cg(self.energy, depth_image_start.flatten(),
+                                                                        fprime=self.energy_prime,
+                                                                        #epsilon=self.eps,
+                                                                        maxiter=self.max_iterations,
+                                                                        callback=self.callback,
+                                                                        full_output=True)
 
         utils.show_image(depth_image_start, 'start image')
 
+        print('shape',self.reshape_flat(xopt).shape)
         utils.show_image(self.reshape_flat(xopt), 'end image')
 
         return 0
@@ -286,8 +307,15 @@ class Optimizer(object):
     def reshape_flat(self, img_flat):
         # Reshapes flat image into array of right dimensions
         third = img_flat.size / (self.shape[0] * self.shape[1])
-        return img_flat.reshape((self.shape[0], self.shape[1], third))
+        if third == 1:
+            return img_flat.reshape((self.shape[0], self.shape[1]))
+        else:
+            return img_flat.reshape((self.shape[0], self.shape[1], third))
 
 optimizer = Optimizer('head_depth.tiff', 'head_ir.tiff')
+
+depth_sensor_image = Image.open('head_depth.tiff')
+depth_sensor_image = np.asarray(depth_sensor_image, dtype=np.float32) * 10
+optimizer.optimize(depth_sensor_image)
 
 plt.show()
