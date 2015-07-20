@@ -312,9 +312,11 @@ class Optimizer(object):
         else:
             return img_flat.reshape((self.shape[0], self.shape[1], third))
 
-optimizer = Optimizer('head_depth.tiff', 'head_ir.tiff')
+path = '../assets/optimization'
 
-depth_sensor_image = Image.open('head_depth.tiff')
+optimizer = Optimizer('%s/head_depth.tiff' % path, '%s/head_ir.tiff' % path)
+
+depth_sensor_image = Image.open('%s/head_depth.tiff' % path)
 depth_sensor_image = np.asarray(depth_sensor_image, dtype=np.float32) * 10
 optimizer.optimize(depth_sensor_image)
 
