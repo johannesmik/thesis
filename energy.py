@@ -35,7 +35,6 @@ __device__ void set_depth_neighborhood(int2 pos, float neighborhood[5][5])
 }
 
 __device__ float intensity_local(int2 center_pos, int2 change_pos, float adjustment){
-
   // Calculate the intensity around center, but adjust the depth of the pixel at change_pos
   // Center_pos: screen coords
   // Change_pos: screen coords
@@ -46,7 +45,6 @@ __device__ float intensity_local(int2 center_pos, int2 change_pos, float adjustm
 
   // Adjust
   depth_neighborhood[change_pos.y - center_pos.y + 2][change_pos.x - center_pos.x + 2] += adjustment;
-  // TODO: assure that indices are not violated
 
   const float3 normal = normal_cross(depth_neighborhood, center_pos);
   const float intensity_return = intensity(normal, pixel_to_camera(center_pos.x, center_pos.y, z));
@@ -68,8 +66,6 @@ inline __device__ float intensity_local(int2 pos, float adjustment) {
 
 extern "C"
 __global__ void energy_prime(float *energy_change_out){
-  // TODO rename intensity_after := i(x_i + h)
-  // TODO rename intensity_before := i(x_i)
 
   // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
