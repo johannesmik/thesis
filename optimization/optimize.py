@@ -22,6 +22,10 @@ mod = SourceModule("""
 #include "intensities.cu"
 #include "normal.cu"
 
+// TODO texture names:
+// depth_sensor, depth_current, ir_sensor, ir_current
+// not more not less
+
 texture<float, cudaTextureType2D, cudaReadModeElementType> depth_sensor;
 texture<float, cudaTextureType2D, cudaReadModeElementType> depth_current;
 texture<float, cudaTextureType2D, cudaReadModeElementType> intensity_current;
@@ -158,8 +162,12 @@ __global__ void energy_normal(float3 *normal, float *energy_normal_out)
 }
 
 extern "C"
-__global__ void energy(float *energy_intensity_out, float *intensity_out, float3 *normal_out)
+//__global__ void energy(float *energy_intensity_out, float *intensity_out, float3 *normal_out)
+__global__ void energy(float *energy_intensity_out)
 {
+  // TODO remove intensity out and normal out
+  // FIXME calculates the wrong energy
+
   // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
   const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -179,9 +187,9 @@ __global__ void energy(float *energy_intensity_out, float *intensity_out, float3
   float intensity_given = tex2D(ir_intensity, x, y);
   float intensity_new = intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor, x, y)));
 
-  intensity_out[index] = intensity_test;
   energy_intensity_out[index] = pow(intensity_given - intensity_new, 2);
-  normal_out[index] = normal_c;
+  // intensity_out[index] = intensity_test;
+  // normal_out[index] = normal_c;
 
 }
 """, no_extern_c=True, include_dirs=[os.getcwd() + '/cuda'])
@@ -258,16 +266,31 @@ class Optimizer(object):
         """
          Calculate energy(depth_image_current)
         """
-        # Todo write this, otherwise it won't optimize I think
 
-        # Fixme obviously this is wrong
-        print ('current energy: ', -depth_fimage_current.max())
-        return -depth_fimage_current.max()
+        # Update current depth
+        depth_image_current = self.reshape_flat(depth_fimage_current)
+        depth_current_arr = drv.matrix_to_array(depth_image_current, 'C')
+        self.depth_current_tex.set_array(depth_current_arr)
+
+        energy_out = np.zeros(self.shape, dtype=np.float32)
+
+        self.energy_function(
+            drv.Out(energy_out),
+            block=(16, 8, 1), grid=(32, 53))
+
+        #utils.show_image(energy_out, title='energy out')
+        print('energy', np.sum(energy_out))
+
+        return np.sum(energy_out)
 
     def energy_prime(self, depth_fimage_current):
         """
          Calculate energy'(depth_image_current)
         """
+
+        depth_image_current = self.reshape_flat(depth_fimage_current)
+        depth_current_arr = drv.matrix_to_array(depth_image_current, 'C')
+        self.depth_current_tex.set_array(depth_current_arr)
 
         ir = np.zeros(self.shape, dtype=np.float32)
         energy_prime = np.zeros(self.shape, dtype=np.float32)
@@ -283,6 +306,9 @@ class Optimizer(object):
         self.energy_prime_function(
               drv.Out(energy_prime),
               block=(16, 8, 1), grid=(32, 53))
+
+        print ('energy_prime, min: ', energy_prime.min(), ' max: ', energy_prime.max())
+
         return energy_prime.flatten()
 
     def optimize(self, depth_image_start):
