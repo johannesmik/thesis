@@ -35,7 +35,7 @@ __device__ void set_depth_neighborhood(int2 pos, float neighborhood[5][5])
 
   for (int i = 0; i < 5; ++i) {
     for (int j = 0; j < 5; ++j) {
-      neighborhood[j][i] = tex2D(depth_sensor, pos.x -2 + i, pos.y -2 + j);
+      neighborhood[j][i] = tex2D(depth_current, pos.x -2 + i, pos.y -2 + j);
     }
   }
 }
