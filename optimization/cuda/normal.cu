@@ -4,17 +4,21 @@
 #ifndef NORMAL_CU
 #define NORMAL_CU
 
+#ifndef m_depth
+  #define m_depth 9
+#endif
+
 #include "utils.cu"
 #include "eigen.cu"
 
-__device__ float3 normal_cross(const float depth_neighborhood[5][5], const int2 pos)
+__device__ float3 normal_cross(const float depth_neighborhood[m_depth][m_depth], const int2 pos)
 {
   /*
      Calculates the normals in the midpoint (2, 2) in a 5x5 neighborhood using a cross product
      pos.x, pos.y: pixel coordinates of the midpoint
   */
 
-  if (depth_neighborhood[3][3] == 0)
+  if (depth_neighborhood[(m_depth + 1) / 2][(m_depth + 1) / 2] == 0)
     return make_float3(0, 0, 0);
 
   // Find the neighbors of the neighbor in camera coords
@@ -30,7 +34,7 @@ __device__ float3 normal_cross(const float depth_neighborhood[5][5], const int2 
   return normal;
 }
 
-__device__ float3 normal_pca(const float depth_neighborhood[5][5], const int2 pos)
+__device__ float3 normal_pca(const float depth_neighborhood[m_depth][m_depth], const int2 pos)
 {
   /*
     Calculate the normal in the midpoint (2, 2) in a 5x5 neighborhood using PCA
@@ -38,12 +42,14 @@ __device__ float3 normal_pca(const float depth_neighborhood[5][5], const int2 po
     Idea from: http://pointclouds.org/documentation/tutorials/normal_estimation.php
   */
 
-  float3 world_points[25];
-  for (int i = 0; i < 5; ++i)
-    for (int j = 0; j < 5; ++j)
-      world_points[j*5 + i] = pixel_to_camera(pos.x - 2 + i, pos.y - 2 + j, depth_neighborhood[j][i]);
+  const int points_n = m_depth * m_depth;
 
-  float3 center = world_points[12];
+  float3 world_points[points_n];
+  for (int i = 0; i < m_depth; ++i)
+    for (int j = 0; j < m_depth; ++j)
+      world_points[j*m_depth + i] = pixel_to_camera(pos.x - 2 + i, pos.y - 2 + j, depth_neighborhood[j][i]);
+
+  float3 center = world_points[(points_n - 1) / 2];
 
   if (center.z == 0)
      return make_float3(0, 0, 0);
@@ -53,15 +59,15 @@ __device__ float3 normal_pca(const float depth_neighborhood[5][5], const int2 po
 
   // Search radius depends on the mean distance of all points
   float avg_dist = 0;
-  for (int i = 0; i < 25; ++i)
+  for (int i = 0; i < points_n; ++i)
     avg_dist += dist(world_points[i], center);
-  avg_dist /= 25;
+  avg_dist /= points_n;
   const float radius = avg_dist;
 
   // Calculate the average point location
   float3 avg = {0};
   int count = 0;
-  for (int i = 0; i < 25; ++i) {
+  for (int i = 0; i < points_n; ++i) {
     if (dist(world_points[i], center) <= radius && world_points[i].z != 0) {
        avg = avg + world_points[i];
        ++count;
@@ -71,7 +77,7 @@ __device__ float3 normal_pca(const float depth_neighborhood[5][5], const int2 po
 
   // Calculate the covariance matrix
   double cov[3][3] = {0};
-  for (int i = 0; i < 25; ++i) {
+  for (int i = 0; i < points_n; ++i) {
     if (dist(world_points[i], center) <= radius && world_points[i].z != 0) {
       // XX, XY, XZ, YY, YZ, ZZ
       cov[0][0] += (double) (world_points[i].x - avg.x) * (world_points[i].x - avg.x) / count;

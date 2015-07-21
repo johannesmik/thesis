@@ -17,60 +17,63 @@ from pycuda.compiler import SourceModule
 import utils
 
 mod = SourceModule("""
+// Should be uneven 5 or 7 or 9
+#define m_depth 5
+#define m_ir 5
+
 #include <cuda.h>
 #include "utils.cu"
 #include "intensities.cu"
 #include "normal.cu"
 
-// TODO texture names:
-// depth_sensor, depth_current, ir_sensor, ir_current
-// not more not less
+texture<float, cudaTextureType2D, cudaReadModeElementType> depth_sensor_tex;
+texture<float, cudaTextureType2D, cudaReadModeElementType> depth_current_tex;
+texture<float, cudaTextureType2D, cudaReadModeElementType> ir_current_tex;
+texture<float, cudaTextureType2D, cudaReadModeElementType> ir_sensor_tex;
 
-texture<float, cudaTextureType2D, cudaReadModeElementType> depth_sensor;
-texture<float, cudaTextureType2D, cudaReadModeElementType> depth_current;
-texture<float, cudaTextureType2D, cudaReadModeElementType> intensity_current;
-texture<float, cudaTextureType2D, cudaReadModeElementType> ir_intensity;
-texture<float, cudaTextureType2D, cudaReadModeElementType> ir_sensor;
-
-__device__ void set_depth_neighborhood(int2 pos, float neighborhood[5][5])
+__device__ void set_depth_neighborhood(int2 pos, float neighborhood[m_depth][m_depth])
 {
-  /* returns the 5x5 depth neighborhood around pos. */
+  /* returns the (m, m) depth neighborhood around pos. */
   /* Loads texture memory into global memory (slow) */
 
-  for (int i = 0; i < 5; ++i) {
-    for (int j = 0; j < 5; ++j) {
-      neighborhood[j][i] = tex2D(depth_current, pos.x -2 + i, pos.y -2 + j);
+  const int left_border = (-1 + (m_ir + 1 )/ 2);
+
+  for (int i = 0; i < m_depth; ++i) {
+    for (int j = 0; j < m_depth; ++j) {
+      neighborhood[j][i] = tex2D(depth_current_tex, pos.x - left_border + i, pos.y - left_border + j);
     }
   }
 }
 
-__device__ float intensity_local(int2 center_pos, int2 change_pos, float adjustment){
-  // Calculate the intensity around center, but adjust the depth of the pixel at change_pos
+__device__ float ir_local(int2 center_pos, int2 change_pos, float adjustment){
+  // Calculate the ir around center based on 'depth_current_tex', but adjust the depth of the pixel at change_pos
   // Center_pos: screen coords
   // Change_pos: screen coords
 
-  float depth_neighborhood[5][5];
+  float depth_neighborhood[m_depth][m_depth];
   set_depth_neighborhood(center_pos, depth_neighborhood);
-  const float z = depth_neighborhood[3][3];
+  const float z = depth_neighborhood[(m_depth + 1) / 2][(m_depth + 1) / 2];
+
+  const int left_border = (-1 + (m_ir + 1 )/ 2);
 
   // Adjust
-  depth_neighborhood[change_pos.y - center_pos.y + 2][change_pos.x - center_pos.x + 2] += adjustment;
+  depth_neighborhood[change_pos.y - center_pos.y + left_border][change_pos.x - center_pos.x + left_border] += adjustment;
 
   const float3 normal = normal_cross(depth_neighborhood, center_pos);
-  const float intensity_return = intensity(normal, pixel_to_camera(center_pos.x, center_pos.y, z));
+  const float ir_return = intensity(normal, pixel_to_camera(center_pos.x, center_pos.y, z));
 
-  return intensity_return;
+  return ir_return;
 }
 
-inline __device__ float intensity_local(int2 pos) {
-  // Calculate the intensity at the midpoint of 5x5 depth neighborhood around pos
-  return intensity_local(pos, pos, 0.0);
+inline __device__ float ir_local(int2 pos) {
+  // Calculate the ir intensity at the midpoint of (m, m) depth neighborhood around pos
+  return ir_local(pos, pos, 0.0);
 }
 
-inline __device__ float intensity_local(int2 pos, float adjustment) {
-  // Calculate the intensity around center, but adjust the depth of the pixel at center
+inline __device__ float ir_local(int2 pos, float adjustment) {
+  // Calculate the ir intensity around center, but adjust the depth of the pixel at center
   // pos: screen coords
-  return intensity_local(pos, pos, adjustment);
+  return ir_local(pos, pos, adjustment);
 }
 
 extern "C"
@@ -84,46 +87,50 @@ __global__ void energy_prime(float *energy_change_out){
 
   const float h = 0.001;
 
-  // Calculate changes in the intensity term
+  // Calculate changes in the ir term
 
-  // Intensity array before and from sensor
-  float intensity_before[5][5];
-  float intensity_sensor[5][5];
+  // ir array before and from sensor
+  float ir_before[m_ir][m_ir];
+  float ir_sensor[m_ir][m_ir];
 
-  for (int i = 0; i < 5; ++i) {
-    for (int j = 0; j < 5; ++j) {
-      intensity_before[j][i] = tex2D(intensity_current, x -2 + i, y -2 + j);
-      intensity_sensor[j][i] = tex2D(ir_sensor, x -2 + i, y -2 + j);
+  // m_ir = 5 -> 2, 7 -> 3
+  const int left_border = (-1 + (m_ir + 1 )/ 2);
+
+  for (int i = 0; i < m_ir; ++i) {
+    for (int j = 0; j < m_ir; ++j) {
+      ir_before[j][i] = tex2D(ir_current_tex, x - left_border + i, y - left_border + j);
+      ir_sensor[j][i] = tex2D(ir_sensor_tex, x - left_border + i, y - left_border + j);
     }
   }
 
-  float intensity_after[5][5];
-  for (int i = 0; i < 5; ++i) {
-    for (int j = 0; j < 5; ++j) {
-      int2 center = make_int2(x + i - 2, y + j - 2);
+  float ir_after[m_ir][m_ir];
+  for (int i = 0; i < m_ir; ++i) {
+    for (int j = 0; j < m_ir; ++j) {
+      int2 center = make_int2(x + i - left_border, y + j - left_border);
       int2 change = make_int2(x, y);
-      intensity_after[j][i] = intensity_local(center, change, h);
+      ir_after[j][i] = ir_local(center, change, h);
     }
   }
 
-  float intensity_term = 0;
-  for (int i = 0; i < 5; ++i) {
-    for (int j = 0; j < 5; ++j) {
-      intensity_term += pow(intensity_after[j][i] - intensity_sensor[j][i], 2) - pow(intensity_before[j][i] - intensity_sensor[j][i], 2);
+  float ir_term = 0;
+  for (int i = 0; i < m_ir; ++i) {
+    for (int j = 0; j < m_ir; ++j) {
+      ir_term += pow(ir_after[j][i] - ir_sensor[j][i], 2) - pow(ir_before[j][i] - ir_sensor[j][i], 2);
     }
   }
-  intensity_term /= h;
+
+  ir_term /= h;
 
   // Calculate changes in the normal term
 
   // Return
-  //energy_change_out[index] = intensity_before[3][3];
-  energy_change_out[index] = intensity_term;
+  //energy_change_out[index] = ir_before[3][3];
+  energy_change_out[index] = ir_term;
 
 }
 
 extern "C"
-__global__ void intensity_image(float *intensity_out)
+__global__ void ir_image(float *ir_out)
 {
     // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -131,7 +138,7 @@ __global__ void intensity_image(float *intensity_out)
   const int elementPitch = blockDim.x * gridDim.x;
   const int index = y * elementPitch + x;
 
-  intensity_out[index] = intensity_local(make_int2(x, y));
+  ir_out[index] = ir_local(make_int2(x, y));
 }
 
 extern "C"
@@ -162,11 +169,15 @@ __global__ void energy_normal(float3 *normal, float *energy_normal_out)
 }
 
 extern "C"
-//__global__ void energy(float *energy_intensity_out, float *intensity_out, float3 *normal_out)
-__global__ void energy(float *energy_intensity_out)
+__global__ void energy(float *energy_ir_out)
 {
-  // TODO remove intensity out and normal out
   // FIXME calculates the wrong energy
+
+  /* Steps to do:
+    - Calculate ir intensity
+    - Calculate normal of current point and adjacent pixels
+    - Calculate energy: ( ir intensity - ir_sensor )
+  */
 
   // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -174,21 +185,19 @@ __global__ void energy(float *energy_intensity_out)
   const int elementPitch = blockDim.x * gridDim.x;
   const int index = y * elementPitch + x;
 
-  float depth_neighborhood[5][5];
+  float depth_neighborhood[m_depth][m_depth];
   set_depth_neighborhood(make_int2(x, y), depth_neighborhood);
 
-  //float intensity_test = intensity_local(make_int2(x, y), depth_neighborhood);
-  //float intensity_test = intensity_local(make_int2(x, y), 0.5);
-  float intensity_test = intensity_local(make_int2(x, y), make_int2(x + 1, y), 0.01);
+  float ir_test = ir_local(make_int2(x, y));
 
   float3 normal = normal_pca(depth_neighborhood, make_int2(x, y));
-  float3 normal_c = normal_colorize(normal);
+  // float3 normal_c = normal_colorize(normal);
 
-  float intensity_given = tex2D(ir_intensity, x, y);
-  float intensity_new = intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor, x, y)));
+  float ir_given = tex2D(ir_sensor_tex, x, y);
+  float ir_new = intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
 
-  energy_intensity_out[index] = pow(intensity_given - intensity_new, 2);
-  // intensity_out[index] = intensity_test;
+  energy_ir_out[index] = pow(ir_given - ir_new, 2);
+  // ir_out[index] = ir_test;
   // normal_out[index] = normal_c;
 
 }
@@ -199,7 +208,7 @@ class Optimizer(object):
     def __init__(self, depth_sensor_filename, ir_sensor_filename):
 
         self.eps = 0.0001
-        self.max_iterations = 5
+        self.max_iterations = 20
 
         self.iteration_counter = 0
 
@@ -211,12 +220,12 @@ class Optimizer(object):
         self.energy_function = mod.get_function("energy")
         self.energy_normal_function = mod.get_function("energy_normal")
         self.energy_prime_function = mod.get_function("energy_prime")
-        self.intensity_function = mod.get_function("intensity_image")
+        self.ir_function = mod.get_function("ir_image")
 
         # Setup and Upload texture Depth_sensor
         self.depth_sensor_image = Image.open(depth_sensor_filename)
         self.depth_sensor_image = np.asarray(self.depth_sensor_image, dtype=np.float32) * 10
-        self.depth_sensor_tex = mod.get_texref('depth_sensor')
+        self.depth_sensor_tex = mod.get_texref('depth_sensor_tex')
         self.depth_sensor_tex.set_address_mode(0, drv.address_mode.CLAMP)
         self.depth_sensor_tex.set_address_mode(1, drv.address_mode.CLAMP)
         self.depth_sensor_arr = drv.matrix_to_array(self.depth_sensor_image, 'C')
@@ -226,7 +235,7 @@ class Optimizer(object):
         # Setup and Upload texture IR_sensor
         self.ir_sensor_image = Image.open(ir_sensor_filename)
         self.ir_sensor_image = np.asarray(self.ir_sensor_image, dtype=np.float32)
-        self.ir_sensor_tex = mod.get_texref('ir_sensor')
+        self.ir_sensor_tex = mod.get_texref('ir_sensor_tex')
         self.ir_sensor_tex.set_address_mode(0, drv.address_mode.CLAMP)
         self.ir_sensor_tex.set_address_mode(1, drv.address_mode.CLAMP)
         self.ir_sensor_arr = drv.matrix_to_array(self.ir_sensor_image, 'C')
@@ -234,7 +243,7 @@ class Optimizer(object):
 
         # Set up texture: Depth_current
         depth_current_image = np.zeros(self.shape, dtype=np.float32)
-        self.depth_current_tex = mod.get_texref('depth_current')
+        self.depth_current_tex = mod.get_texref('depth_current_tex')
         self.depth_current_tex.set_address_mode(0, drv.address_mode.CLAMP)
         self.depth_current_tex.set_address_mode(1, drv.address_mode.CLAMP)
         depth_current_arr = drv.matrix_to_array(depth_current_image, 'C')
@@ -242,18 +251,11 @@ class Optimizer(object):
 
         # Set up texture: Intensity current
         self.ir_current_image = np.zeros(self.shape, dtype=np.float32)
-        self.ir_current_tex = mod.get_texref('intensity_current')
+        self.ir_current_tex = mod.get_texref('ir_current_tex')
         self.ir_current_tex.set_address_mode(0, drv.address_mode.CLAMP)
         self.ir_current_tex.set_address_mode(1, drv.address_mode.CLAMP)
         self.ir_current_arr = drv.matrix_to_array(self.ir_current_image, 'C')
         self.ir_current_tex.set_array(self.ir_current_arr)
-
-        # Set up temporary variables
-        energy_intensity = np.zeros(self.shape, dtype=np.float32)
-        energy_prime = np.zeros(self.shape, dtype=np.float32)
-        intensity = np.zeros(self.shape, dtype=np.float32)
-        energy_normal = np.zeros(self.shape, dtype=np.float32)
-        normal = np.zeros((self.shape[0], self.shape[1], 3), dtype=np.float32)
 
     def add_noise(self, image, mu=0.0, sigma=0.0):
         image = image + sigma * np.random.randn(*image.shape).astype(np.float32) + mu
@@ -266,11 +268,9 @@ class Optimizer(object):
         """
          Calculate energy(depth_image_current)
         """
+        # TODO way to log the single energy terms
 
-        # Update current depth
-        depth_image_current = self.reshape_flat(depth_fimage_current)
-        depth_current_arr = drv.matrix_to_array(depth_image_current, 'C')
-        self.depth_current_tex.set_array(depth_current_arr)
+        self.set_current_depth(self.reshape_flat(depth_fimage_current))
 
         energy_out = np.zeros(self.shape, dtype=np.float32)
 
@@ -279,23 +279,21 @@ class Optimizer(object):
             block=(16, 8, 1), grid=(32, 53))
 
         #utils.show_image(energy_out, title='energy out')
-        print('energy', np.sum(energy_out))
+        print('energy', np.sum(energy_out) * 1000)
 
-        return np.sum(energy_out)
+        return np.sum(energy_out) * 1000
 
     def energy_prime(self, depth_fimage_current):
         """
          Calculate energy'(depth_image_current)
         """
 
-        depth_image_current = self.reshape_flat(depth_fimage_current)
-        depth_current_arr = drv.matrix_to_array(depth_image_current, 'C')
-        self.depth_current_tex.set_array(depth_current_arr)
+        self.set_current_depth(self.reshape_flat(depth_fimage_current))
 
         ir = np.zeros(self.shape, dtype=np.float32)
         energy_prime = np.zeros(self.shape, dtype=np.float32)
 
-        self.intensity_function(
+        self.ir_function(
               drv.Out(ir),
               block=(16, 8, 1), grid=(32, 53))
 
@@ -306,6 +304,8 @@ class Optimizer(object):
         self.energy_prime_function(
               drv.Out(energy_prime),
               block=(16, 8, 1), grid=(32, 53))
+
+        energy_prime = energy_prime / 100
 
         print ('energy_prime, min: ', energy_prime.min(), ' max: ', energy_prime.max())
 
@@ -328,6 +328,14 @@ class Optimizer(object):
         print('shape',self.reshape_flat(xopt).shape)
         utils.show_image(self.reshape_flat(xopt), 'end image')
 
+        utils.show_image(self.ir_sensor_image, 'ir sensor image')
+
+        ir_start = self.relight_depth(depth_image_start)
+        utils.show_image(ir_start, 'ir start')
+
+        ir_end = self.relight_depth(self.reshape_flat(xopt))
+        utils.show_image(ir_end, 'ir end')
+
         return 0
 
     def reshape_flat(self, img_flat):
@@ -337,6 +345,23 @@ class Optimizer(object):
             return img_flat.reshape((self.shape[0], self.shape[1]))
         else:
             return img_flat.reshape((self.shape[0], self.shape[1], third))
+
+    def relight_depth(self, depth_image):
+
+        # TODO candidate for function set_current_depth
+        self.set_current_depth(depth_image)
+
+        ir = np.zeros(self.shape, dtype=np.float32)
+
+        self.ir_function(
+              drv.Out(ir),
+              block=(16, 8, 1), grid=(32, 53))
+
+        return ir
+
+    def set_current_depth(self, depth_image):
+        depth_arr = drv.matrix_to_array(depth_image, 'C')
+        self.depth_current_tex.set_array(depth_arr)
 
 path = '../assets/optimization'
 

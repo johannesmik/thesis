@@ -7,6 +7,10 @@
 #include "lights.cu"
 
 __device__ float intensity(const float3 &normal, const float3 &w) {
+  /*
+    normal: normals of the point
+    w: world - coordinates of the point
+  */
 
   if (w.z == 0)
      return 0;
