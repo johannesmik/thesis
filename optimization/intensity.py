@@ -1,4 +1,4 @@
-# Calculate the intensity prime (using a point light)
+# Calculate the  prime (using a point light)
 
 from __future__ import print_function
 import numpy as np

@@ -50,6 +50,8 @@ __device__ float ir_local(int2 center_pos, int2 change_pos, float adjustment){
   // Center_pos: screen coords
   // Change_pos: screen coords
 
+  LambertianLightingModel lightingmodel = LambertianLightingModel();
+
   float depth_neighborhood[m_depth][m_depth];
   set_depth_neighborhood(center_pos, depth_neighborhood);
   const float z = depth_neighborhood[(m_depth + 1) / 2][(m_depth + 1) / 2];
@@ -60,7 +62,7 @@ __device__ float ir_local(int2 center_pos, int2 change_pos, float adjustment){
   depth_neighborhood[change_pos.y - center_pos.y + left_border][change_pos.x - center_pos.x + left_border] += adjustment;
 
   const float3 normal = normal_cross(depth_neighborhood, center_pos);
-  const float ir_return = intensity(normal, pixel_to_camera(center_pos.x, center_pos.y, z));
+  const float ir_return = lightingmodel.intensity(normal, pixel_to_camera(center_pos.x, center_pos.y, z));
 
   return ir_return;
 }
@@ -179,6 +181,8 @@ __global__ void energy(float *energy_ir_out)
     - Calculate energy: ( ir intensity - ir_sensor )
   */
 
+  LambertianLightingModel lightingmodel = LambertianLightingModel();
+
   // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
   const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -194,7 +198,7 @@ __global__ void energy(float *energy_ir_out)
   // float3 normal_c = normal_colorize(normal);
 
   float ir_given = tex2D(ir_sensor_tex, x, y);
-  float ir_new = intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
+  float ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
 
   energy_ir_out[index] = pow(ir_given - ir_new, 2);
   // ir_out[index] = ir_test;

@@ -39,6 +39,8 @@ __device__ float intensity_local(int2 center_pos, int2 change_pos, float adjustm
   // Center_pos: screen coords
   // Change_pos: screen coords
 
+  LambertianLightingModel lightingmodel = LambertianLightingModel();
+
   float depth_neighborhood[5][5];
   set_depth_neighborhood(center_pos, depth_neighborhood);
   const float z = depth_neighborhood[3][3];
@@ -47,7 +49,7 @@ __device__ float intensity_local(int2 center_pos, int2 change_pos, float adjustm
   depth_neighborhood[change_pos.y - center_pos.y + 2][change_pos.x - center_pos.x + 2] += adjustment;
 
   const float3 normal = normal_cross(depth_neighborhood, center_pos);
-  const float intensity_return = intensity(normal, pixel_to_camera(center_pos.x, center_pos.y, z));
+  const float intensity_return = lightingmodel.intensity(normal, pixel_to_camera(center_pos.x, center_pos.y, z));
 
   return intensity_return;
 }
@@ -168,11 +170,13 @@ __global__ void energy(float *energy_intensity_out, float *intensity_out, float3
   //float intensity_test = intensity_local(make_int2(x, y), 0.5);
   float intensity_test = intensity_local(make_int2(x, y), make_int2(x + 1, y), 0.01);
 
+  LambertianLightingModel lightingmodel = LambertianLightingModel();
+
   float3 normal = normal_pca(depth_neighborhood, make_int2(x, y));
   float3 normal_c = normal_colorize(normal);
 
   float intensity_given = tex2D(ir_intensity, x, y);
-  float intensity_new = intensity(normal, pixel_to_camera(x, y, tex2D(depth, x, y)));
+  float intensity_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, tex2D(depth, x, y)));
 
   intensity_out[index] = intensity_test;
   energy_intensity_out[index] = pow(intensity_given - intensity_new, 2);
@@ -192,13 +196,13 @@ if use_testimage:
     depth_image = np.asarray(depth_image, dtype=np.float32)
     depth_image = depth_image * 10.0 / 255.
 else:
-    depth_image = Image.open("sphere_depth.tiff")
-    depth_image = Image.open("head_depth.tiff")
+    depth_image = Image.open("../assets/optimization/sphere_depth.tiff")
+    depth_image = Image.open("../assets/optimization/head_depth.tiff")
     #depth_image = depth_image.filter(ImageFilter.GaussianBlur(2))
     depth_image = np.asarray(depth_image, dtype=np.float32)
     depth_image = depth_image * 10
 
-ir_intensity_image = Image.open("head_ir.tiff")
+ir_intensity_image = Image.open("../assets/optimization/head_ir.tiff")
 ir_intensity_image = np.asarray(ir_intensity_image, dtype=np.float32)
 #ir_intensity_image = ir_intensity_image[:,:,0] / 255.
 

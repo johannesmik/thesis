@@ -5,7 +5,7 @@
 #define NORMAL_CU
 
 #ifndef m_depth
-  #define m_depth 9
+  #define m_depth 5
 #endif
 
 #include "utils.cu"
