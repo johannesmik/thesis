@@ -32,6 +32,7 @@ class Context:
         self.shaderlib = shaders.ShaderLib()
 
     def render(self, scene, camera):
+        scene.activate()
         self._render(scene, camera)
         SDL_GL_SwapWindow(self.window)
         return self.sdl_control(scene, camera)

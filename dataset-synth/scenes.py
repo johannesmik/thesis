@@ -9,6 +9,20 @@ import materials
 import lights
 import cameras
 
+light_ambient = lights.AmbientLight(color=np.array([0.2, 0.2, 0.2, 1]))
+light_pointlight1 = lights.PointLight(name='Point Light 1',
+                                     position=np.array([0, 0, 0, 1]),
+                                     color=np.array(np.array([0.2, 0.2, 0.2, 1])),
+                                     falloff=0.2)
+light_pointlight2 = lights.PointLight(name='Point Light 2',
+                                     position=np.array([0, 0, 0, 1]),
+                                     color=np.array(np.array([1, 1, 1, 1])),
+                                     falloff=1.0)
+light_directional = lights.DirectionalLight(name='Directional Light', color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+
+light_spotlight = lights.SpotLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.1,
+                                 cone_angle=np.pi / 8., direction=np.array([0, 0, 2]))
+
 
 class Scene(object):
     def __init__(self, backgroundcolor=None, name="Untitled Scene"):
@@ -28,10 +42,19 @@ class Scene(object):
     def _add_camera(self, camera):
         self.cameras.append(camera)
 
+    def _set_lights(self):
+        pass
+
+    def activate(self):
+        self._set_lights()
+
     def add(self, obj):
         return self.add_object(obj)
 
     def add_object(self, obj):
+
+        if obj.name in self.objects and obj == self.objects[obj.name]:
+            return
 
         if obj.name in self.objects:
             match = re.search(r'(.*?)(\d+)$', obj.name)
@@ -93,12 +116,15 @@ class SimpleSphere(Scene):
         sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
                              material=sphere_material)
 
-        light1 = lights.AmbientLight(color=np.array([0.2, 0.2, 0.2, 1]))
-        light2 = lights.DirectionalLight(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
-
         self.add(sphere)
-        self.add(light1)
-        self.add(light2)
+
+        self.add(light_ambient)
+        self.add(light_directional)
+
+    def _set_lights(self):
+        light_ambient.set_parameters(color=np.array([0.2, 0.2, 0.2, 1]))
+
+        light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
 
 class SimpleWave(Scene):
     """ Simple Wave with an Ambient and Directional Light """
@@ -113,15 +139,11 @@ class SimpleWave(Scene):
 
         wave_material.set_basecolor(np.array([1.0, 0.6, 0]))
 
-        light1 = lights.AmbientLight(color=np.array([0.8, 0.8, 0.8, 1]))
-        light2 = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.0)
-        light3 = lights.DirectionalLight(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
-
         self.add(wave)
-        #self.add(light1)
-        self.add(light2)
-        #self.add(light3)
+        self.add(light_pointlight1)
 
+    def _set_lights(self):
+        light_pointlight1.set_parameters(color=np.array([1, 1, 1, 1]), position=np.array([0, 0, 0]), falloff=0.0)
 
 class TwoSpheres(Scene):
     """ Two spheres with a Directional Light """
@@ -142,9 +164,10 @@ class TwoSpheres(Scene):
         sphere.size = 2
         self.add(sphere)
 
-        light = lights.DirectionalLight(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+        self.add(light_directional)
 
-        self.add(light)
+    def _set_lights(self):
+        light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
 
 
 class ThreeSpheres(Scene):
@@ -173,9 +196,10 @@ class ThreeSpheres(Scene):
         sphere.size = 2
         self.add(sphere)
 
-        light = lights.DirectionalLight(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+        self.add(light_directional)
 
-        self.add(light)
+    def _set_lights(self):
+        light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
 
 
 class FourSpheres(Scene):
@@ -211,14 +235,10 @@ class FourSpheres(Scene):
                              material=sphere_material)
         self.add(sphere)
 
-        light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.1)
-        self.add(light)
-
-        light = lights.PointLight(position=np.array([1.5, 0, -2]), color=np.array([1, 1, 1, 1]), falloff=1)
-        self.add(light)
-
-        light = lights.AmbientLight(color=np.array([0.3, 0.3, 0.3, 1]))
-        self.add(light)
+    def _set_lights(self):
+        light_pointlight1.set_parameters(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.1)
+        light_pointlight2.set_parameters(position=np.array([1.5, 0, -2]), color=np.array([1, 1, 1, 1]), falloff=1)
+        light_ambient.set_parameters(color=np.array([0.3, 0.3, 0.3, 1]))
 
 
 class DepthTexture(Scene):
@@ -227,6 +247,8 @@ class DepthTexture(Scene):
     def __init__(self, lighttype="directional", material="lambertian"):
 
         super(DepthTexture, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+
+        self.lighttype = lighttype
 
         if material == "lambertian":
             square_material = materials.LambertianMaterial()
@@ -237,14 +259,18 @@ class DepthTexture(Scene):
         square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -1.5]), geometry=meshes.SquareGeometry(),
                              material=square_material)
         square.size = 1.5
+        self.add(square)
 
         if lighttype == "directional":
-            light = lights.DirectionalLight(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+            self.add(light_directional)
         elif lighttype == "point":
-            light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
+            self.add(light_pointlight1)
 
-        self.add(square)
-        self.add(light)
+    def _set_lights(self):
+        if self.lighttype == "directional":
+            light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+        elif self.lighttype == "point":
+            light_pointlight1.set_parameters(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
 
 
 class NormalTexture(Scene):
@@ -253,6 +279,7 @@ class NormalTexture(Scene):
     def __init__(self, lighttype="directional", material="lambertian"):
 
         super(NormalTexture, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        self.lighttype = lighttype
 
         if material == "lambertian":
             square_material = materials.LambertianMaterial()
@@ -264,13 +291,18 @@ class NormalTexture(Scene):
                              material=square_material)
         square.size = 1.5
 
-        if lighttype == "directional":
-            light = lights.DirectionalLight(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
-        elif lighttype == "point":
-            light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
-
         self.add(square)
-        self.add(light)
+
+        if lighttype == "directional":
+            self.add(light_directional)
+        elif lighttype == "point":
+            self.add(light_pointlight1)
+
+    def _set_lights(self):
+        if self.lighttype == "directional":
+            light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+        elif self.lighttype == "point":
+            light_pointlight1.set_parameters(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
 
 
 class SphereRectangle(Scene):
@@ -292,10 +324,17 @@ class SphereRectangle(Scene):
         self.add(square)
 
         if lighttype == "directional":
-            light = lights.DirectionalLight(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+            self.add(light_directional)
         elif lighttype == "point":
-            light = lights.PointLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
-        self.add(light)
+            self.add(light_pointlight1)
+
+    def _set_lights(self):
+        if self.lighttype == "directional":
+            light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+        elif self.lighttype == "point":
+            light_pointlight1.set_parameters(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0)
+
+
 
 
 class SpotLightExample(Scene):
@@ -326,49 +365,50 @@ class SpotLightExample(Scene):
         square.size = 2
         self.add(square)
 
-        light = lights.SpotLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.1,
-                                 cone_angle=np.pi / 8., direction=np.array([0, 0, 2]))
-        self.add(light)
+        self.add(light_spotlight)
+
+    def _set_lights(self):
+        light_spotlight.set_parameters(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.1,
+                                       cone_angle=np.pi / 8., direction=np.array([0, 0, 2]))
 
 
 class Monkey(Scene):
     def __init__(self):
         super(Monkey, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
 
-        monkey_geometry = meshes.ObjectFile('./assets/suzanne.obj')
+        monkey_geometry = meshes.ObjectFile('../assets/suzanne.obj')
         monkey_material = materials.BlinnPhongMaterial()
-        monkey_material.add_colormap("./assets/suzanne-texture.png")
+        monkey_material.add_colormap("../assets/suzanne-texture.png")
         monkey = meshes.Mesh(name='Suzanne', position=np.array([0, 0, -2]), geometry=monkey_geometry,
                              material=monkey_material)
         self.add(monkey)
 
-        light = lights.PointLight(position=np.array([0, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.5)
-        self.add(light)
+        self.add(light_pointlight1)
+        self.add(light_pointlight2)
+        self.add(light_ambient)
 
-        light = lights.PointLight(position=np.array([1.5, 4, -2]), color=np.array([1, 1, 1, 1]), falloff=0.5)
-        self.add(light)
-
-        light = lights.AmbientLight(color=np.array([0.3, 0.3, 0.3, 1]))
-        self.add(light)
-
+    def _set_lights(self):
+        light_pointlight1.set_parameters(position=np.array([0, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.5)
+        light_pointlight2.set_parameters(position=np.array([1.5, 4, -2]), color=np.array([1, 1, 1, 1]), falloff=0.5)
+        light_ambient.set_parameters(color=np.array([0.3, 0.3, 0.3, 1]))
 
 class Face(Scene):
     def __init__(self):
         super(Face, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
 
         # Model from 'TurboSquid'
-        face_geometry = meshes.ObjectFile('./assets/humanface.obj')
+        face_geometry = meshes.ObjectFile('../assets/humanface.obj')
         face_material = materials.BlinnPhongMaterial()
-        face_material.add_colormap("./assets/humanface-texture.png")
+        face_material.add_colormap("../assets/humanface-texture.png")
         face = meshes.Mesh(name='Face', position=np.array([0, 0, -2]), geometry=face_geometry, material=face_material)
         self.add(face)
 
-        light = lights.PointLight(position=np.array([0, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.5)
-        self.add(light)
+        self.add(light_pointlight1)
+        self.add(light_pointlight2)
+        self.add(light_ambient)
 
-        light = lights.PointLight(position=np.array([1.5, 2, -2]), color=np.array([1, 1, 1, 1]), falloff=0.5)
-        self.add(light)
-
-        light = lights.AmbientLight(color=np.array([0.3, 0.3, 0.3, 1]))
-        self.add(light)
+    def _set_lights(self):
+        light_pointlight1.set_parameters(position=np.array([0, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.5)
+        light_pointlight2.set_parameters(position=np.array([1.5, 2, -2]), color=np.array([1, 1, 1, 1]), falloff=0.5)
+        light_ambient.set_parameters(color=np.array([0.3, 0.3, 0.3, 1]))
 

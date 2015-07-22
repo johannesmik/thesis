@@ -56,19 +56,29 @@ class Light(object):
             self.name = name
             Light.registered_names.append(name)
 
+    def set_parameters(self, **kwargs):
+        for parameter_name, parameter_value in kwargs.iteritems():
+            if parameter_name in self.uniforms:
+                self.uniforms[parameter_name] = parameter_value
+            else:
+                print self.__class__.__name__, 'has not attribute', parameter_name
+
     def set_position(self, position):
-        self.uniforms['position'] = position
+        if 'position' in self.uniforms:
+            self.uniforms['position'] = position
+        else:
+            print self.__class__.__name__, 'has no attribute position'
 
     def __repr__(self):
         return self.__class__.__name__ + " (name: " + self.name + ")"
 
 class DirectionalLight(Light):
-    def __init__(self, name='Directionallight', position=None, color=None, falloff=None, direction=None):
+    def __init__(self, direction, name='Directionallight', position=None, color=None, falloff=None):
         self.lighttype = 'directionlights'
         self._register_name(name)
         self.position = position
         self.color = color
-        self.falloff = falloff
+        self.falloff = falloff if falloff else 0
         self.direction = direction / np.linalg.norm(direction)
 
         self.uniforms = {'color': color, 'direction': direction}

@@ -33,7 +33,7 @@ if __name__ == '__main__':
         frames = sys.argv[1]
         path = sys.argv[2]
     else:
-        frames = 20
+        frames = 5
         path = "~/dataset"
 
     path = os.path.expanduser(path)
@@ -80,6 +80,8 @@ if __name__ == '__main__':
     scene_head.add(ambientlight)
     scene_head.add(pointlight_origin)
     # scene_head.add(pointlight_right)
+
+
 
     scenes = [scene_sphere, scene_head]
 
