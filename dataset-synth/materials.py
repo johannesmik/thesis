@@ -137,7 +137,7 @@ class LambertianMaterial(BaseMaterial):
 
 
 class BlinnPhongMaterial(BaseMaterial):
-    def __init__(self, specularity=1.0, specular_color=np.array([1., 1., 1.])):
+    def __init__(self, specularity=50.0, specular_color=np.array([1., 1., 1.])):
         super(BlinnPhongMaterial, self).__init__()
 
         self.uniforms['specularity'] = specularity
