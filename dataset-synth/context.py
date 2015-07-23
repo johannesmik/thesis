@@ -37,6 +37,9 @@ class Context:
         SDL_GL_SwapWindow(self.window)
         return self.sdl_control(scene, camera)
 
+    def relink_shaders(self):
+        self.shaderlib = shaders.ShaderLib()
+
     def _render(self, scene, camera):
 
         glClearColor(*scene.backgroundcolor)

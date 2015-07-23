@@ -30,7 +30,7 @@ if __name__ == '__main__':
     verbosity = False
 
     if len(sys.argv) == 3:
-        frames = sys.argv[1]
+        frames = int(sys.argv[1])
         path = sys.argv[2]
     else:
         frames = 5
@@ -83,9 +83,9 @@ if __name__ == '__main__':
 
 
 
-    scenes = [scene_sphere, scene_head]
+    dataset_scenes = [scenes.ThreeSpheres(), scenes.ThreeSpheresSpecular(), scene_head]
 
-    for scene in scenes:
+    for scene in dataset_scenes:
 
         stripped_name = scene.name.replace(' ', '')
 
@@ -113,6 +113,7 @@ if __name__ == '__main__':
             c.screenshot_bw(scene, camera, "%s/%s_%04d_depth.tiff" % (path, stripped_name, t), verbose=verbosity)
 
         # IR
+        c.relink_shaders()
         scene.remove_lights()
         scene.add(ir_light)
         for mesh in scene.meshes:
