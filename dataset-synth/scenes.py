@@ -178,12 +178,14 @@ class ThreeSpheres(Scene):
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.LambertianMaterial()
+        sphere_material.set_basecolor(np.array([1, 0, 0]))
         sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -3.5]), geometry=sphere_geometry,
                              material=sphere_material)
         self.add(sphere)
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.LambertianMaterial()
+        sphere_material.set_basecolor(np.array([0, 1, 0]))
         sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 0.5, -4]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.size = 1
@@ -191,6 +193,7 @@ class ThreeSpheres(Scene):
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.LambertianMaterial()
+        sphere_material.set_basecolor(np.array([0, 0, 1]))
         sphere = meshes.Mesh(name='Sphere 3', position=np.array([-2, 0.5, -4]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.size = 1
