@@ -11,12 +11,12 @@ import cameras
 
 light_ambient = lights.AmbientLight(color=np.array([0.2, 0.2, 0.2, 1]))
 light_pointlight1 = lights.PointLight(name='Point Light 1',
-                                     position=np.array([0, 0, 0, 1]),
+                                     position=np.array([0., 0., 0.]),
                                      color=np.array(np.array([0.2, 0.2, 0.2, 1])),
                                      falloff=0.2)
 light_pointlight2 = lights.PointLight(name='Point Light 2',
-                                     position=np.array([0, 0, 0, 1]),
-                                     color=np.array(np.array([1, 1, 1, 1])),
+                                     position=np.array([0., 0., 0.]),
+                                     color=np.array(np.array([1., 1., 1., 1.])),
                                      falloff=1.0)
 light_directional = lights.DirectionalLight(name='Directional Light', color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
 
