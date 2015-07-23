@@ -109,7 +109,7 @@ class SimpleSphere(Scene):
     """ One Sphere with an Ambient and Directional Light """
 
     def __init__(self):
-        super(SimpleSphere, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(SimpleSphere, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Simple Sphere')
 
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.LambertianMaterial()
@@ -130,7 +130,7 @@ class SimpleWave(Scene):
     """ Simple Wave with an Ambient and Directional Light """
 
     def __init__(self):
-        super(SimpleWave, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(SimpleWave, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Simple Wave')
 
         wave_geometry = meshes.WaveGeometry(periodicity=0.5, hscale=0.1)
         wave_material = materials.LambertianMaterial()
@@ -149,7 +149,7 @@ class TwoSpheres(Scene):
     """ Two spheres with a Directional Light """
 
     def __init__(self):
-        super(TwoSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(TwoSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Two Spheres')
 
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.LambertianMaterial()
@@ -174,32 +174,32 @@ class ThreeSpheres(Scene):
     """ Three spheres with a Directional Light """
 
     def __init__(self):
-        super(ThreeSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(ThreeSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Three Spheres')
 
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.LambertianMaterial()
-        sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
+        sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -3.5]), geometry=sphere_geometry,
                              material=sphere_material)
         self.add(sphere)
 
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.LambertianMaterial()
-        sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 2, -4]), geometry=sphere_geometry,
+        sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 0.5, -4]), geometry=sphere_geometry,
                              material=sphere_material)
-        sphere.size = 2
+        sphere.size = 1
         self.add(sphere)
 
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.LambertianMaterial()
-        sphere = meshes.Mesh(name='Sphere 3', position=np.array([-2, -2, -4]), geometry=sphere_geometry,
+        sphere = meshes.Mesh(name='Sphere 3', position=np.array([-2, 0.5, -4]), geometry=sphere_geometry,
                              material=sphere_material)
-        sphere.size = 2
+        sphere.size = 1
         self.add(sphere)
 
         self.add(light_directional)
 
     def _set_lights(self):
-        light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
+        light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([-1, -1, -1]))
 
 
 class FourSpheres(Scene):
@@ -209,7 +209,7 @@ class FourSpheres(Scene):
     """
 
     def __init__(self):
-        super(FourSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(FourSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Four Spheres')
 
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.LambertianMaterial()
@@ -246,7 +246,7 @@ class DepthTexture(Scene):
 
     def __init__(self, lighttype="directional", material="lambertian"):
 
-        super(DepthTexture, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(DepthTexture, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Depth Texture')
 
         self.lighttype = lighttype
 
@@ -278,7 +278,7 @@ class NormalTexture(Scene):
 
     def __init__(self, lighttype="directional", material="lambertian"):
 
-        super(NormalTexture, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(NormalTexture, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Normal Texture')
         self.lighttype = lighttype
 
         if material == "lambertian":
@@ -309,7 +309,7 @@ class SphereRectangle(Scene):
     """ A sphere with a Rectangle behind it"""
 
     def __init__(self, lighttype):
-        super(SphereRectangle, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(SphereRectangle, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Sphere and Rectangle')
 
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.LambertianMaterial()
@@ -344,7 +344,7 @@ class SpotLightExample(Scene):
     """
 
     def __init__(self):
-        super(SpotLightExample, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(SpotLightExample, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Spot Light Example')
 
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.LambertianMaterial()
@@ -374,7 +374,7 @@ class SpotLightExample(Scene):
 
 class Monkey(Scene):
     def __init__(self):
-        super(Monkey, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(Monkey, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Monkey')
 
         monkey_geometry = meshes.ObjectFile('../assets/suzanne.obj')
         monkey_material = materials.BlinnPhongMaterial()
@@ -394,7 +394,7 @@ class Monkey(Scene):
 
 class Face(Scene):
     def __init__(self):
-        super(Face, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]))
+        super(Face, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Face')
 
         # Model from 'TurboSquid'
         face_geometry = meshes.ObjectFile('../assets/humanface.obj')
