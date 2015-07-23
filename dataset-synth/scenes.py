@@ -171,35 +171,49 @@ class TwoSpheres(Scene):
 
 
 class ThreeSpheres(Scene):
-    """ Three spheres with a Directional Light """
+    """ Three spheres with a Point Light """
 
     def __init__(self):
         super(ThreeSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Three Spheres')
 
-        sphere_geometry = meshes.IcosphereGeometry()
+        sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.LambertianMaterial()
         sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -3.5]), geometry=sphere_geometry,
                              material=sphere_material)
         self.add(sphere)
 
-        sphere_geometry = meshes.IcosphereGeometry()
+        sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.LambertianMaterial()
         sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 0.5, -4]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.size = 1
         self.add(sphere)
 
-        sphere_geometry = meshes.IcosphereGeometry()
+        sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.LambertianMaterial()
         sphere = meshes.Mesh(name='Sphere 3', position=np.array([-2, 0.5, -4]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.size = 1
         self.add(sphere)
 
-        self.add(light_directional)
+        self.add(light_pointlight1)
 
     def _set_lights(self):
-        light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([-1, -1, -1]))
+        light_pointlight1.set_parameters(position=np.array([5, 5, 0]),
+                                         color=np.array([1, 1, 1, 1]),
+                                         falloff=0)
+
+class ThreeSpheresSpecular(ThreeSpheres):
+
+    def __init__(self):
+        super(ThreeSpheresSpecular, self).__init__()
+
+        self.get_object('Sphere 1').material = materials.BlinnPhongMaterial(specularity=50.0, specular_color=np.array([0, 1, 0]))
+        self.get_object('Sphere 1').material.set_basecolor(np.array([1, 0, 0]))
+        self.get_object('Sphere 2').material = materials.BlinnPhongMaterial(specularity=50.0)
+        self.get_object('Sphere 2').material.set_basecolor(np.array([0, 1, 0]))
+        self.get_object('Sphere 3').material = materials.BlinnPhongMaterial(specularity=50.0)
+        self.get_object('Sphere 3').material.set_basecolor(np.array([0, 0, 1]))
 
 
 class FourSpheres(Scene):

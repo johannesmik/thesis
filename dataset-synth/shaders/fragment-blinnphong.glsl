@@ -134,7 +134,7 @@ vec3 specular_intensity(in PointLight light, in vec3 normal0, in vec3 position_c
     return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
 }
 
-vec3 diffuse_intensity(in SpotLight light, in vec3 normal0, in vec3 position, in float specularity){
+vec3 specular_intensity(in SpotLight light, in vec3 normal0, in vec3 position, in float specularity){
     // Todo
     return vec3(0, 0, 0);
 }
