@@ -132,6 +132,29 @@ class TriangleGeometry(Geometry):
         self.indices = [0, 1, 2]
 
 
+class BoxGeometry(Geometry):
+    """ Create a Box mesh """
+
+    def __init__(self):
+        super(BoxGeometry, self).__init__()
+
+        self.vertices = vbo.VBO(np.array([[1, 1, 1], [-1, 1, 1], [-1, -1, 1], [1, -1, 1],
+                                          [1, 1, -1], [-1, 1, -1], [-1, -1, -1], [1, -1, -1]] * 6,
+                                          'float32'), usage=GL_STATIC_DRAW)
+
+        self.texcoords = vbo.VBO(np.array([[0, 0], [0.5, 1], [1, 0]], 'float32'),
+                                 usage=GL_STATIC_DRAW)
+
+        normal_directions = [[0, 0, 1], [1, 0, 0], [0, 0, -1], [-1, 0, 0], [0, 1, 0], [0, -1, 0]]
+        normals = [[normal_direction] * 8 for normal_direction in normal_directions]
+
+        self.normals = vbo.VBO(np.array(normals, 'float32'),
+                               usage=GL_STATIC_DRAW)
+
+        indices = [0, 1, 2, 0, 2, 3, 4, 0, 3, 4, 3, 7, 5, 4, 7, 5, 7, 6, 1, 5, 6, 1, 6, 2, 4, 5, 1, 4, 1, 0, 6, 7, 3, 6, 3, 2]
+        self.indices = [offset + index for offset in range(6) for index in indices]
+
+
 class IcosphereGeometry(Geometry):
     """ Icosphere """
 
