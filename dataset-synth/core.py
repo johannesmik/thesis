@@ -13,7 +13,9 @@ class Object3D(object):
 
         self.rotation = rotation if isinstance(rotation, np.ndarray) else np.array([0, 0, 0], 'float')
 
-        self.size = size
+        self.size_x = size
+        self.size_x = size
+        self.size_x = size
 
         self.visible = True
 
@@ -46,15 +48,25 @@ class Object3D(object):
 
     @property
     def scalematrix(self):
-        scale = np.array([[self.size, 0, 0, 0],
-                          [0, self.size, 0, 0],
-                          [0, 0, self.size, 0],
+        scale = np.array([[self.size_x, 0, 0, 0],
+                          [0, self.size_y, 0, 0],
+                          [0, 0, self.size_z, 0],
                           [0, 0, 0, 1]])
         return scale
 
     @property
     def modelmatrix(self):
         return np.dot(np.dot(self.rotationmatrix, self.translationmatrix), self.scalematrix)
+
+    def set_size(self, *args):
+        if len(args) == 1:
+            self.size_x = args[0]
+            self.size_y = args[0]
+            self.size_z = args[0]
+        elif len(args) == 3:
+            self.size_x = args[0]
+            self.size_y = args[1]
+            self.size_z = args[2]
 
     def toggle_visibility(self):
         if self.visible:

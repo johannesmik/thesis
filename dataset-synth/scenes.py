@@ -161,7 +161,7 @@ class TwoSpheres(Scene):
         sphere_material = materials.LambertianMaterial()
         sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 2, -4]), geometry=sphere_geometry,
                              material=sphere_material)
-        sphere.size = 2
+        sphere.set_size(2)
         self.add(sphere)
 
         self.add(light_directional)
