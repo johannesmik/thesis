@@ -14,8 +14,8 @@ class Object3D(object):
         self.rotation = rotation if isinstance(rotation, np.ndarray) else np.array([0, 0, 0], 'float')
 
         self.size_x = size
-        self.size_x = size
-        self.size_x = size
+        self.size_y = size
+        self.size_z = size
 
         self.visible = True
 
