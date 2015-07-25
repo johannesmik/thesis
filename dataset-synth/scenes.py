@@ -123,7 +123,6 @@ class SimpleSphere(Scene):
 
     def _set_lights(self):
         light_ambient.set_parameters(color=np.array([0.2, 0.2, 0.2, 1]))
-
         light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
 
 class SimpleWave(Scene):
@@ -168,57 +167,6 @@ class TwoSpheres(Scene):
 
     def _set_lights(self):
         light_directional.set_parameters(color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
-
-
-class ThreeSpheres(Scene):
-    """ Three spheres with a Point Light """
-
-    def __init__(self):
-        super(ThreeSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Three Spheres')
-
-        sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
-        sphere_material = materials.LambertianMaterial()
-        sphere_material.set_basecolor(np.array([1, 0, 0]))
-        sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -3.5]), geometry=sphere_geometry,
-                             material=sphere_material)
-        self.add(sphere)
-
-        sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
-        sphere_material = materials.LambertianMaterial()
-        sphere_material.set_basecolor(np.array([0, 1, 0]))
-        sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 0.5, -4]), geometry=sphere_geometry,
-                             material=sphere_material)
-        sphere.size = 1
-        self.add(sphere)
-
-        sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
-        sphere_material = materials.LambertianMaterial()
-        sphere_material.set_basecolor(np.array([0, 0, 1]))
-        sphere = meshes.Mesh(name='Sphere 3', position=np.array([-2, 0.5, -4]), geometry=sphere_geometry,
-                             material=sphere_material)
-        sphere.size = 1
-        self.add(sphere)
-
-        self.add(light_pointlight1)
-
-    def _set_lights(self):
-        light_pointlight1.set_parameters(position=np.array([5, 5, 0]),
-                                         color=np.array([1, 1, 1, 1]),
-                                         falloff=0)
-
-class ThreeSpheresSpecular(ThreeSpheres):
-
-    def __init__(self):
-        super(ThreeSpheresSpecular, self).__init__()
-
-        self.name = 'Three Spheres Specular'
-
-        self.get_object('Sphere 1').material = materials.BlinnPhongMaterial(specularity=50.0)
-        self.get_object('Sphere 1').material.set_basecolor(np.array([1, 0, 0]))
-        self.get_object('Sphere 2').material = materials.BlinnPhongMaterial(specularity=50.0)
-        self.get_object('Sphere 2').material.set_basecolor(np.array([0, 1, 0]))
-        self.get_object('Sphere 3').material = materials.BlinnPhongMaterial(specularity=50.0)
-        self.get_object('Sphere 3').material.set_basecolor(np.array([0, 0, 1]))
 
 
 class FourSpheres(Scene):
@@ -431,3 +379,188 @@ class Face(Scene):
         light_pointlight2.set_parameters(position=np.array([1.5, 2, -2]), color=np.array([1, 1, 1, 1]), falloff=0.5)
         light_ambient.set_parameters(color=np.array([0.3, 0.3, 0.3, 1]))
 
+###################################################
+#### Scenes used for the dataset in the thesis ####
+###################################################
+
+class DiffuseSphere(Scene):
+
+        def __init__(self):
+            super(DiffuseSphere, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='1 Diffuse Sphere')
+
+            sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
+            sphere_material = materials.LambertianMaterial()
+            sphere_material.set_basecolor(np.array([1, 1, 1]))
+            sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
+                                 material=sphere_material)
+
+            self.add(sphere)
+
+            self.add(light_ambient)
+            self.add(light_pointlight1)
+
+        def _set_lights(self):
+            light_ambient.set_parameters(color=np.array([0.2, 0.2, 0.2, 1]))
+            light_pointlight1.set_parameters(color=np.array([1, 1, 1, 1]),
+                                             position=np.array([1, 1, 0]),
+                                             falloff=0.4)
+
+
+class SpecularSphere(Scene):
+        """ A sphere with a pointlight. """
+
+        def __init__(self):
+            super(SpecularSphere, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='2 Specular Sphere')
+
+            sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
+            sphere_material = materials.BlinnPhongMaterial(specularity=50)
+            sphere_material.set_basecolor(np.array([1, 1, 1]))
+            sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
+                                 material=sphere_material)
+
+            self.add(sphere)
+
+            self.add(light_ambient)
+            self.add(light_pointlight1)
+
+        def _set_lights(self):
+            light_ambient.set_parameters(color=np.array([0.2, 0.2, 0.2, 1]))
+            light_pointlight1.set_parameters(color=np.array([1, 1, 1, 1]),
+                                             position=np.array([1, 1, 0]),
+                                             falloff=0.4)
+
+
+class SpecularSphereBacklight(Scene):
+        """ A sphere with a pointlight behind the camera """
+
+        def __init__(self):
+            super(SpecularSphereBacklight, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='3 Specular Sphere Backlight')
+
+            sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
+            sphere_material = materials.BlinnPhongMaterial(specularity=50)
+            sphere_material.set_basecolor(np.array([1, 1, 1]))
+            sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
+                                 material=sphere_material)
+
+            self.add(sphere)
+
+            self.add(light_ambient)
+            self.add(light_pointlight1)
+
+        def _set_lights(self):
+            light_ambient.set_parameters(color=np.array([0.2, 0.2, 0.2, 1]))
+            light_pointlight1.set_parameters(color=np.array([1, 1, 1, 1]),
+                                             position=np.array([0, 0, 0.5]),
+                                             falloff=0.4)
+
+
+class ThreeSpheres(Scene):
+    """ Three spheres with a Point Light """
+
+    def __init__(self):
+        super(ThreeSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='4 Three Spheres')
+
+        sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
+        sphere_material = materials.LambertianMaterial()
+        sphere_material.set_basecolor(np.array([0, 1, 0]))
+        sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -3.5]), geometry=sphere_geometry,
+                             material=sphere_material)
+        self.add(sphere)
+
+        sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
+        sphere_material = materials.BlinnPhongMaterial(specularity=50.0)
+        sphere_material.set_basecolor(np.array([0, 0, 1]))
+        sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 0, -4]), geometry=sphere_geometry,
+                             material=sphere_material)
+        sphere.size = 1
+        self.add(sphere)
+
+        sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
+        sphere_material = materials.BlinnPhongMaterial(specularity=100.0, specular_color=np.array([0, 0, 0]))
+        sphere_material.set_basecolor(np.array([1, 0, 0]))
+        sphere = meshes.Mesh(name='Sphere 3', position=np.array([-2, 0, -4]), geometry=sphere_geometry,
+                             material=sphere_material)
+        sphere.size = 1
+        self.add(sphere)
+
+        self.add(light_ambient)
+        self.add(light_pointlight1)
+
+    def _set_lights(self):
+        light_ambient.set_parameters(color=np.array([0.5, 0.5, 0.5, 1]))
+        light_pointlight1.set_parameters(position=np.array([5, 5, 5]),
+                                         color=np.array([1, 1, 1, 1]),
+                                         falloff=0.0)
+
+
+class Wave(Scene):
+    """ Wave with a PointLight """
+
+    def __init__(self):
+        super(Wave, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='5 Wave')
+
+        wave_geometry = meshes.WaveGeometry(periodicity=0.7, hscale=0.1)
+        wave_material = materials.LambertianMaterial()
+        wave = meshes.Mesh(name='Wave 1', position=np.array([0, 0, -2]), geometry=wave_geometry,
+                             material=wave_material)
+
+        wave_material.set_basecolor(np.array([1.0, 0.6, 0]))
+
+        self.add(wave)
+        self.add(light_ambient)
+        self.add(light_pointlight1)
+
+    def _set_lights(self):
+        light_ambient.set_parameters(color=np.array([0.3, 0.3, 0.3, 1]))
+        light_pointlight1.set_parameters(position=np.array([5, 5, 5]),
+                                         color=np.array([1, 1, 1, 1]),
+                                         falloff=0.0)
+
+
+class WaveBacklight(Scene):
+    # TODO add different specularities
+    """ Wave with a PointLight behind the camera """
+
+    def __init__(self):
+        super(WaveBacklight, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='6 Wave Backlight')
+
+        wave_geometry = meshes.WaveGeometry(periodicity=0.7, hscale=0.1)
+        wave_material = materials.LambertianMaterial()
+        wave = meshes.Mesh(name='Wave 1', position=np.array([0, 0, -2]), geometry=wave_geometry,
+                             material=wave_material)
+
+        wave_material.set_basecolor(np.array([1.0, 0.6, 0]))
+
+        self.add(wave)
+        self.add(light_ambient)
+        self.add(light_pointlight1)
+
+    def _set_lights(self):
+        light_ambient.set_parameters(color=np.array([0.2, 0.2, 0.2, 1]))
+        light_pointlight1.set_parameters(position=np.array([0, 0, 1]),
+                                         color=np.array([1, 1, 1, 1]),
+                                         falloff=0.05)
+
+class ColoredBoxes(Scene):
+    """ Three colored/textured boxes """
+    # TODO color them
+
+    def __init__(self):
+        super(ColoredBoxes, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='7 Colored Boxes')
+
+        box_geometry = meshes.BoxGeometry()
+        box_material = materials.LambertianMaterial()
+        box = meshes.Mesh(name='Box 1', position=np.array([0, 0, -2]), geometry=box_geometry,
+                             material=box_material)
+
+        box.set_size(0.75, 2, 0.5)
+
+        self.add(box)
+        self.add(light_ambient)
+        self.add(light_pointlight1)
+
+    def _set_lights(self):
+        light_ambient.set_parameters(color=np.array([0.2, 0.2, 0.2, 1]))
+        light_pointlight1.set_parameters(position=np.array([1, 1, 1]),
+                                         color=np.array([1, 1, 1, 1]),
+                                         falloff=0.2)
