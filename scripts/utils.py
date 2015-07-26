@@ -68,7 +68,7 @@ def convert_blob(blob_filename, png_filename, image_type):
 
     return
 
-def show_image(image, title=None):
+def show_image(image, title=None, minmax=None):
 
     image_copy = image.copy()
 
@@ -86,8 +86,11 @@ def show_image(image, title=None):
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
 
-    minimum = min(image_copy.min(), 0.0)
-    maximum = max(image_copy.max(), 1.0)
+    if not minmax:
+        minimum = min(image_copy.min(), 0.0)
+        maximum = max(image_copy.max(), 1.0)
+    else:
+        minimum, maximum = minmax
 
     print("Show Image (", title ,"): Chosen min/max", minimum, maximum, " Real min/max", image_copy.min(), image_copy.max())
 
