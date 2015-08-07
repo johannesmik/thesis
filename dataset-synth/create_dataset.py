@@ -4,6 +4,7 @@ import numpy as np
 import yaml
 import os
 import sys
+import time
 
 import cameras
 import context
@@ -83,11 +84,13 @@ if __name__ == '__main__':
 
 
 
-    dataset_scenes = [scenes.ThreeSpheres(), scenes.ThreeSpheresSpecular(), scene_head]
+    dataset_scenes = [scenes.ThreeSpheres(), scene_head]
 
     for scene in dataset_scenes:
 
         stripped_name = scene.name.replace(' ', '')
+
+        c.relink_shaders()
 
         # Color
         for t in range(frames):
@@ -95,6 +98,22 @@ if __name__ == '__main__':
             c.render(scene, camera)
             save_yaml("%s/%s_%04d_camera.yaml" % (path, stripped_name, t), scene, camera, t, verbose=verbosity)
             c.screenshot(scene, camera, "%s/%s_%04d_color.tiff" % (path, stripped_name, t), verbose=verbosity)
+            time.sleep(.5)
+
+        # IR
+        c.toggle_ir()
+        scene.remove_lights()
+        c.relink_shaders()
+        scene.add(ir_light)
+        for t in range(frames):
+            camera.set_current_frame(t)
+            ir_light.set_position(camera.position)
+            c.render(scene, camera)
+            c.screenshot_bw(scene, camera, "%s/%s_%04d_ir.tiff" % (path, stripped_name, t), verbose=verbosity)
+            time.sleep(.5)
+        scene.remove_object(ir_light)
+        scene.recover_lights()
+        c.toggle_ir()
 
         # Normal
         for mesh in scene.meshes:
@@ -103,6 +122,7 @@ if __name__ == '__main__':
             camera.set_current_frame(t)
             c.render(scene, camera)
             c.screenshot(scene, camera, "%s/%s_%04d_normal.tiff" % (path, stripped_name, t), verbose=verbosity)
+            time.sleep(.5)
 
         # Depth
         for mesh in scene.meshes:
@@ -111,16 +131,4 @@ if __name__ == '__main__':
             camera.set_current_frame(t)
             c.render(scene, camera)
             c.screenshot_bw(scene, camera, "%s/%s_%04d_depth.tiff" % (path, stripped_name, t), verbose=verbosity)
-
-        # IR
-        c.relink_shaders()
-        scene.remove_lights()
-        scene.add(ir_light)
-        for mesh in scene.meshes:
-            # TODO Replace this
-            mesh.material = materials.LambertianMaterial()
-        for t in range(frames):
-            camera.set_current_frame(t)
-            ir_light.set_position(camera.position)
-            c.render(scene, camera)
-            c.screenshot_bw(scene, camera, "%s/%s_%04d_ir.tiff" % (path, stripped_name, t), verbose=verbosity)
+            time.sleep(.5)

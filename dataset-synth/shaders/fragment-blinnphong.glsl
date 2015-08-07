@@ -4,6 +4,7 @@
 uniform bool use_colormap;
 uniform bool use_normalmap;
 uniform bool use_depthmap;
+uniform bool ir_active;
 
 uniform sampler2D colormap;
 uniform sampler2D normalmap;
@@ -122,7 +123,7 @@ vec4 specular_intensity(in DirectionLight light, in vec3 normal0, in vec3 positi
     float theta = dot(normal0, H);
 
     if (light.color != vec4(0, 0, 0, 0)) {
-        vec4 intensity = pow(theta, specularity) * vec4(1, 1, 1, 1);
+        vec4 intensity = pow(theta, specularity) * light.color;
         return clamp(intensity, 0, 1);
     }
 
@@ -141,7 +142,7 @@ vec4 specular_intensity(in PointLight light, in vec3 normal0, in vec3 position_w
     float theta = dot(normal0, H);
 
     if (light.color != vec4(0, 0, 0, 0)) {
-        vec4 intensity = pow(theta, specularity) * vec4(1, 1, 1, 1);
+        vec4 intensity = pow(theta, specularity) * light.color;
         return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
     }
     return vec4(0, 0, 0, 0);
@@ -164,7 +165,7 @@ vec4 specular_intensity(in SpotLight light, in vec3 normal0, in vec3 position_w,
     float theta = dot(normal0, H);
 
     if (light.color != vec4(0, 0, 0, 0)) {
-        vec4 intensity = pow(theta, specularity) * vec4(1, 1, 1, 1);
+        vec4 intensity = pow(theta, specularity) * light.color;
         return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
     }
     return vec4(0, 0, 0, 0);
@@ -225,8 +226,13 @@ void main(){
         diffuse += diffuse_intensity(spotlights[i], normal, position_w);
     }
 
-    out_color = clamp(color * (ambient + diffuse) + specular_color * (specular), 0.0, 1.0);
 
+    if (ir_active) {
+        float t = (color * (ambient + diffuse) + specular_color * (specular)).a;
+        out_color = clamp(vec4(t, t, t, 1), 0, 1);
+    } else {
+        out_color = clamp(vec4((color * (ambient + diffuse) + specular_color * (specular)).rgb, 1), 0.0, 1.0);
+    }
     // Apply some cheap noise
     //out_color = out_color + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);
 }

@@ -3,6 +3,7 @@
 uniform bool use_colormap;
 uniform bool use_normalmap;
 uniform bool use_depthmap;
+uniform bool ir_active;
 
 uniform sampler2D colormap;
 uniform sampler2D normalmap;
@@ -187,7 +188,12 @@ void main(){
         diffuse += diffuse_intensity(spotlights[i], normal, position_w);
     }
 
-    out_color = clamp(color * (ambient + diffuse), 0.0, 1.0);
+    if (ir_active) {
+        float t = (color * (ambient + diffuse)).a;
+        out_color = clamp(vec4(t, t, t, 1), 0, 1);
+    } else {
+        out_color = clamp(vec4((color * (ambient + diffuse)).rgb, 1), 0.0, 1.0);
+    }
 
     // Apply some cheap noise
     //out_color = out_color + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);

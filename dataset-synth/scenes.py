@@ -9,10 +9,10 @@ import materials
 import lights
 import cameras
 
-light_ambient = lights.AmbientLight(color=np.array([0.2, 0.2, 0.2, 1]))
+light_ambient = lights.AmbientLight(color=np.array([0.2, 0.2, 0.2, 0.2]))
 light_pointlight1 = lights.PointLight(name='Point Light 1',
                                      position=np.array([0., 0., 0.]),
-                                     color=np.array(np.array([0.2, 0.2, 0.2, 1])),
+                                     color=np.array(np.array([0.2, 0.2, 0.2, 0.2])),
                                      falloff=0.2)
 light_pointlight2 = lights.PointLight(name='Point Light 2',
                                      position=np.array([0., 0., 0.]),
@@ -99,7 +99,13 @@ class Scene(object):
         """ Removes all lights from the scene. """
         for light in self.lights:
             self.objects.pop(light.name)
+        self.lights_backup = self.lights
         self.lights = []
+
+    def recover_lights(self):
+        """ Recovers the lights that were added before remove_lights() was called the last time """
+        for light in self.lights_backup:
+            self.add(light)
 
     def get_object(self, name):
         return self.objects.get(name, None)
@@ -469,7 +475,7 @@ class ThreeSpheres(Scene):
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.BlinnPhongMaterial(specularity=50.0)
-        sphere_material.set_basecolor(np.array([0, 0, 1, 0.5]))
+        sphere_material.set_basecolor(np.array([0, 0, 1, 0.1]))
         sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 0, -4]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.size = 1
@@ -487,7 +493,7 @@ class ThreeSpheres(Scene):
         self.add(light_pointlight1)
 
     def _set_lights(self):
-        light_ambient.set_parameters(color=np.array([0.5, 0.5, 0.5, 1]))
+        light_ambient.set_parameters(color=np.array([0.5, 0.5, 0.5, 0.5]))
         light_pointlight1.set_parameters(position=np.array([5, 5, 5]),
                                          color=np.array([1, 1, 1, 1]),
                                          falloff=0.0)

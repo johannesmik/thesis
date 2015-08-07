@@ -2,6 +2,7 @@
 
 uniform sampler2D colormap;
 uniform vec4 basecolor;
+uniform bool ir_active;
 
 in vec3 normal0;
 in vec2 texcoords0;
@@ -28,5 +29,10 @@ void main(){
     for(int i = 0; i < MAX_AMBIENT_LIGHTS; i++){
         ambient +=  ambientcolor(basecolor + texture2D(colormap, texcoords0), ambientlights[i]);
     }
-    gl_FragColor = clamp(ambient, 0., 1.0);
+
+    if (ir_active) {
+        gl_FragColor = clamp(vec4(ambient.a, ambient.a, ambient.a, 1), 0, 1);
+    } else {
+        gl_FragColor = clamp(vec4(ambient.rgb, 1), 0., 1.0);
+    }
 }

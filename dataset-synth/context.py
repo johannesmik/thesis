@@ -31,6 +31,8 @@ class Context:
 
         self.shaderlib = shaders.ShaderLib()
 
+        self.ir_active = False
+
     def render(self, scene, camera):
         scene.activate()
         self._render(scene, camera)
@@ -73,6 +75,11 @@ class Context:
             # Put up material uniforms and textures
             mesh.material.put_up_uniforms(shader)
             mesh.material.put_up_textures(shader)
+
+            # Activate/Deactivate IR mode
+            if shader.locations.get('ir_active', -1) != -1:
+                glUniform1f(shader.locations['ir_active'], self.ir_active)
+
 
             # Put up camera uniforms
             # glUniformMatrix4fv(shader.locations['MMatrix'], 1, GL_TRUE, np.eye(4))
@@ -336,6 +343,7 @@ class Context:
         if event.key.keysym.sym == SDLK_p:
             print "Debug info (Key g)"
             print ""
+            self.toggle_ir()
 
     def resize_event(self, event, camera):
         """ Handles a resize event. Event: SDL-event data. """
@@ -370,6 +378,9 @@ class Context:
             if self.event.type == SDL_WINDOWEVENT and self.event.window.event == SDL_WINDOWEVENT_RESIZED:
                 self.resize_event(self.event, camera)
         return True
+
+    def toggle_ir(self):
+        self.ir_active = not self.ir_active
 
     @staticmethod
     def print_opengl_info():

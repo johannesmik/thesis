@@ -52,7 +52,7 @@ class ShaderLib:
     def __init__(self):
         self.ambient = Shader('./shaders/vertex.glsl', './shaders/fragment-ambient.glsl',
                               ['position', 'texcoords'],
-                              ['PMatrix', 'MMatrix', 'VMatrix'])
+                              ['PMatrix', 'MMatrix', 'VMatrix', 'ir_active'])
 
         self.depth = Shader('shaders/vertex.glsl', 'shaders/fragment-depth.glsl',
                             ['position'],
@@ -66,9 +66,9 @@ class ShaderLib:
         self.lambertian = Shader('shaders/vertex.glsl', 'shaders/fragment-lambertian.glsl',
                                  ['position', 'color', 'normal', 'texcoords'],
                                  ['PMatrix', 'MMatrix', 'VMatrix', 'colormap', 'normalmap', 'depthmap', 'basecolor',
-                                  'use_normalmap', 'use_colormap', 'use_depthmap'])
+                                  'use_normalmap', 'use_colormap', 'use_depthmap', 'ir_active'])
 
         self.blinnphong = Shader('shaders/vertex.glsl', 'shaders/fragment-blinnphong.glsl',
                                  ['position', 'color', 'normal', 'texcoords'],
                                  ['PMatrix', 'MMatrix', 'VMatrix', 'colormap', 'normalmap', 'depthmap', 'basecolor',
-                                  'use_normalmap', 'use_colormap', 'specularity', 'specular_color'])
+                                  'use_normalmap', 'use_colormap', 'specularity', 'specular_color', 'ir_active'])
