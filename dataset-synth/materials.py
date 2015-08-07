@@ -11,7 +11,7 @@ class BaseMaterial(object):
         self.uniforms = {}
         self.textures = {'colormap': self.empty_texture(color="white")}
 
-        self.uniforms = {'basecolor': np.array([1., 1., 1.])}
+        self.uniforms = {'basecolor': np.array([1., 1., 1., 1.])}
 
     def put_up_uniforms(self, shader):
         for uniform_name, uniform_value in self.uniforms.items():
@@ -137,7 +137,7 @@ class LambertianMaterial(BaseMaterial):
 
 
 class BlinnPhongMaterial(BaseMaterial):
-    def __init__(self, specularity=50.0, specular_color=np.array([1., 1., 1.])):
+    def __init__(self, specularity=50.0, specular_color=np.array([1., 1., 1., 1.])):
         super(BlinnPhongMaterial, self).__init__()
 
         self.uniforms['specularity'] = specularity

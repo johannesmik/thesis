@@ -8,7 +8,7 @@ uniform sampler2D colormap;
 uniform sampler2D normalmap;
 uniform sampler2D depthmap;
 
-uniform vec3 basecolor;
+uniform vec4 basecolor;
 
 in vec3 normal0;
 in vec2 texcoords0;
@@ -63,13 +63,13 @@ float attenuation(in float falloff, in float distance) {
     return 1. / ( 1 + falloff * distance * distance);
 }
 
-vec3 ambient_intensity(in vec3 basecolor, in AmbientLight light){
-    return basecolor *  light.color.rgb;
+vec4 ambient_intensity(in vec4 basecolor, in AmbientLight light){
+    return basecolor *  light.color;
 }
 
 /**************** Diffuse Intensities ********************/
 
-vec3 diffuse_intensity(in DirectionLight light, in vec3 normal0){
+vec4 diffuse_intensity(in DirectionLight light, in vec3 normal0){
     // Normalize the light direction if not a null-vector
     vec3 direction;
     if (length(light.direction) != 0)
@@ -77,27 +77,27 @@ vec3 diffuse_intensity(in DirectionLight light, in vec3 normal0){
     else
         direction = -light.direction;
 
-    return dot(direction, normal0) * light.color.rgb;
+    return dot(direction, normal0) * light.color;
 }
 
-vec3 diffuse_intensity(in PointLight light, in vec3 normal0, in vec3 position){
+vec4 diffuse_intensity(in PointLight light, in vec3 normal0, in vec3 position){
     float distance = length(position - light.position);
     vec3 direction = - normalize(position - light.position);
 
-    vec3 intensity = dot(direction, normal0) * light.color.rgb;
+    vec4 intensity = dot(direction, normal0) * light.color;
     return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
 }
 
-vec3 diffuse_intensity(in SpotLight light, in vec3 normal0, in vec3 position){
+vec4 diffuse_intensity(in SpotLight light, in vec3 normal0, in vec3 position){
     float distance = length(position - light.position);
     vec3 direction = - normalize(position - light.position);
 
     // Check if angle (between ray-direction and cone-direction) is within the limits
     float angle = acos(dot(direction, normalize(light.direction)));
     if (angle > light.cone_angle)
-        return vec3(0, 0, 0);
+        return vec4(0, 0, 0, 0);
 
-    vec3 intensity = dot(direction, normal0) * light.color.rgb;
+    vec4 intensity = dot(direction, normal0) * light.color;
     return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
 }
 
@@ -128,7 +128,7 @@ vec3 from_texture_to_camera(in vec2 texture_coords, in sampler2D depthmap){
 
 void main(){
 
-    vec3 color;
+    vec4 color;
     vec3 normal;
 
     if (use_normalmap) {
@@ -157,7 +157,7 @@ void main(){
     }
 
     if (use_colormap) {
-        color = texture2D(normalmap, texcoords0).rgb;
+        color = texture2D(normalmap, texcoords0);
     }
     else {
         color = basecolor;
@@ -165,14 +165,14 @@ void main(){
 
     /* Ambient */
 
-    vec3 ambient = vec3(0, 0, 0);
+    vec4 ambient = vec4(0, 0, 0, 0);
     for(int i = 0; i < MAX_AMBIENT_LIGHTS; i++){
         ambient +=  ambient_intensity(color, ambientlights[i]);
     }
 
     /* Diffuse */
 
-    vec3 diffuse = vec3(0, 0, 0);
+    vec4 diffuse = vec4(0, 0, 0, 0);
     for(int i = 0; i < MAX_DIRECTION_LIGHTS; i++){
         diffuse += diffuse_intensity(directionlights[i], normal);
     }
@@ -187,7 +187,7 @@ void main(){
         diffuse += diffuse_intensity(spotlights[i], normal, position_w);
     }
 
-    out_color = clamp(vec4(color * (ambient + diffuse), 1), 0.0, 1.0);
+    out_color = clamp(color * (ambient + diffuse), 0.0, 1.0);
 
     // Apply some cheap noise
     //out_color = out_color + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);

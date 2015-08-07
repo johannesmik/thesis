@@ -9,9 +9,9 @@ uniform sampler2D colormap;
 uniform sampler2D normalmap;
 uniform sampler2D depthmap;
 
-uniform vec3 basecolor;
+uniform vec4 basecolor;
 uniform float specularity;
-uniform vec3 specular_color;
+uniform vec4 specular_color;
 
 uniform mat4 MMatrix;
 uniform mat4 VMatrix;
@@ -72,13 +72,13 @@ float attenuation(in float falloff, in float distance) {
 
 /**************** Ambient Intensities ********************/
 
-vec3 ambient_intensity(in AmbientLight light){
-    return clamp(light.color.rgb, 0, 1);
+vec4 ambient_intensity(in AmbientLight light){
+    return clamp(light.color, 0, 1);
 }
 
 /**************** Diffuse Intensities ********************/
 
-vec3 diffuse_intensity(in DirectionLight light, in vec3 normal0){
+vec4 diffuse_intensity(in DirectionLight light, in vec3 normal0){
     // Normalize the light direction if not a null-vector
     vec3 direction;
     if (length(light.direction) != 0)
@@ -86,33 +86,33 @@ vec3 diffuse_intensity(in DirectionLight light, in vec3 normal0){
     else
         direction = -light.direction;
 
-    return dot(direction, normal0) * light.color.rgb;
+    return dot(direction, normal0) * light.color;
 }
 
-vec3 diffuse_intensity(in PointLight light, in vec3 normal0, in vec3 position){
+vec4 diffuse_intensity(in PointLight light, in vec3 normal0, in vec3 position){
     float distance = length(position - light.position);
     vec3 direction = - normalize(position - light.position);
 
-    vec3 intensity = dot(direction, normal0) * light.color.rgb;
+    vec4 intensity = dot(direction, normal0) * light.color;
     return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
 }
 
-vec3 diffuse_intensity(in SpotLight light, in vec3 normal0, in vec3 position){
+vec4 diffuse_intensity(in SpotLight light, in vec3 normal0, in vec3 position){
     float distance = length(position - light.position);
     vec3 direction = - normalize(position - light.position);
 
     // Check if angle (between ray-direction and cone-direction) is within the limits
     float angle = acos(dot(direction, normalize(light.direction)));
     if (angle > light.cone_angle)
-        return vec3(0, 0, 0);
+        return vec4(0, 0, 0, 0);
 
-    vec3 intensity = dot(direction, normal0) * light.color.rgb;
+    vec4 intensity = dot(direction, normal0) * light.color;
     return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
 }
 
 /**************** Specular Intensities ********************/
 
-vec3 specular_intensity(in DirectionLight light, in vec3 normal0, in vec3 position_w, in float specularity){
+vec4 specular_intensity(in DirectionLight light, in vec3 normal0, in vec3 position_w, in float specularity){
 
     vec3 camera_pos_w = (inverse(VMatrix) * vec4(0, 0, 0, 1)).xyz;
     vec3 V = normalize(camera_pos_w - position_w);
@@ -121,15 +121,15 @@ vec3 specular_intensity(in DirectionLight light, in vec3 normal0, in vec3 positi
 
     float theta = dot(normal0, H);
 
-    if (light.color.rgb != vec3(0, 0, 0)) {
-        vec3 intensity = pow(theta, specularity) * vec3(1, 1, 1);
+    if (light.color != vec4(0, 0, 0, 0)) {
+        vec4 intensity = pow(theta, specularity) * vec4(1, 1, 1, 1);
         return clamp(intensity, 0, 1);
     }
 
-    return vec3(0, 0, 0);
+    return vec4(0, 0, 0, 0);
 }
 
-vec3 specular_intensity(in PointLight light, in vec3 normal0, in vec3 position_w, in float specularity){
+vec4 specular_intensity(in PointLight light, in vec3 normal0, in vec3 position_w, in float specularity){
 
     float distance = length(position_w - light.position);
 
@@ -140,14 +140,14 @@ vec3 specular_intensity(in PointLight light, in vec3 normal0, in vec3 position_w
 
     float theta = dot(normal0, H);
 
-    if (light.color.rgb != vec3(0, 0, 0)) {
-        vec3 intensity = pow(theta, specularity) * vec3(1, 1, 1);
+    if (light.color != vec4(0, 0, 0, 0)) {
+        vec4 intensity = pow(theta, specularity) * vec4(1, 1, 1, 1);
         return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
     }
-    return vec3(0, 0, 0);
+    return vec4(0, 0, 0, 0);
 }
 
-vec3 specular_intensity(in SpotLight light, in vec3 normal0, in vec3 position_w, in float specularity){
+vec4 specular_intensity(in SpotLight light, in vec3 normal0, in vec3 position_w, in float specularity){
     // Todo check if this is correct
     float distance = length(position_w - light.position);
 
@@ -159,21 +159,21 @@ vec3 specular_intensity(in SpotLight light, in vec3 normal0, in vec3 position_w,
     // Check if angle (between ray-direction and cone-direction) is within the limits
     float angle = acos(dot(L, normalize(light.direction)));
     if (angle > light.cone_angle)
-        return vec3(0, 0, 0);
+        return vec4(0, 0, 0, 0);
 
     float theta = dot(normal0, H);
 
-    if (light.color.rgb != vec3(0, 0, 0)) {
-        vec3 intensity = pow(theta, specularity) * vec3(1, 1, 1);
+    if (light.color != vec4(0, 0, 0, 0)) {
+        vec4 intensity = pow(theta, specularity) * vec4(1, 1, 1, 1);
         return clamp(attenuation(light.falloff, distance) * intensity, 0, 1);
     }
-    return vec3(0, 0, 0);
+    return vec4(0, 0, 0, 0);
 }
 
 void main(){
 
     vec3 normal;
-    vec3 color;
+    vec4 color;
 
     if (use_normalmap) {
      // Also map (0, 1) range to (-1, 1)
@@ -184,7 +184,7 @@ void main(){
     }
 
     if (use_colormap) {
-        color = texture2D(normalmap, texcoords0).rgb;
+        color = texture2D(normalmap, texcoords0).rgba;
     }
     else {
         color = basecolor;
@@ -200,15 +200,15 @@ void main(){
 
     /* Ambient */
 
-    vec3 ambient = vec3(0, 0, 0);
+    vec4 ambient = vec4(0, 0, 0, 0);
     for(int i = 0; i < MAX_AMBIENT_LIGHTS; i++){
         ambient +=  ambient_intensity(ambientlights[i]);
     }
 
     /* Diffuse and Specular */
 
-    vec3 diffuse = vec3(0, 0, 0);
-    vec3 specular = vec3(0, 0, 0);
+    vec4 diffuse = vec4(0, 0, 0, 0);
+    vec4 specular = vec4(0, 0, 0, 0);
     for(int i = 0; i < MAX_DIRECTION_LIGHTS; i++){
         diffuse += diffuse_intensity(directionlights[i], normal);
         specular += specular_intensity(directionlights[i], normal, position_w, specularity);
@@ -225,7 +225,7 @@ void main(){
         diffuse += diffuse_intensity(spotlights[i], normal, position_w);
     }
 
-    out_color = clamp(vec4(color * (ambient + diffuse) + specular_color * (specular), 1), 0.0, 1.0);
+    out_color = clamp(color * (ambient + diffuse) + specular_color * (specular), 0.0, 1.0);
 
     // Apply some cheap noise
     //out_color = out_color + .1 *(vec4(rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), rand(gl_FragCoord.xy), 1) - 0.5);

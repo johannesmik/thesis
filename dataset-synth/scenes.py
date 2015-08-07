@@ -136,7 +136,7 @@ class SimpleWave(Scene):
         wave = meshes.Mesh(name='Wave 1', position=np.array([0, 0, -2]), geometry=wave_geometry,
                              material=wave_material)
 
-        wave_material.set_basecolor(np.array([1.0, 0.6, 0]))
+        wave_material.set_basecolor(np.array([1.0, 0.6, 0, 0.6]))
 
         self.add(wave)
         self.add(light_pointlight1)
@@ -390,7 +390,7 @@ class DiffuseSphere(Scene):
 
             sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
             sphere_material = materials.LambertianMaterial()
-            sphere_material.set_basecolor(np.array([1, 1, 1]))
+            sphere_material.set_basecolor(np.array([1, 1, 1, 1]))
             sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
                                  material=sphere_material)
 
@@ -414,7 +414,7 @@ class SpecularSphere(Scene):
 
             sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
             sphere_material = materials.BlinnPhongMaterial(specularity=50)
-            sphere_material.set_basecolor(np.array([1, 1, 1]))
+            sphere_material.set_basecolor(np.array([1, 1, 1, 1]))
             sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
                                  material=sphere_material)
 
@@ -438,7 +438,7 @@ class SpecularSphereBacklight(Scene):
 
             sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
             sphere_material = materials.BlinnPhongMaterial(specularity=50)
-            sphere_material.set_basecolor(np.array([1, 1, 1]))
+            sphere_material.set_basecolor(np.array([1, 1, 1, 1]))
             sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -2]), geometry=sphere_geometry,
                                  material=sphere_material)
 
@@ -462,14 +462,14 @@ class ThreeSpheres(Scene):
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.BlinnPhongMaterial(specularity=50.0, specular_color=np.array([0.62, 0.62, 0.62, 0.62]))
-        sphere_material.set_basecolor(np.array([0, 1, 0]))
+        sphere_material.set_basecolor(np.array([0, 1, 0, 0.3]))
         sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -3.5]), geometry=sphere_geometry,
                              material=sphere_material)
         self.add(sphere)
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.BlinnPhongMaterial(specularity=50.0)
-        sphere_material.set_basecolor(np.array([0, 0, 1]))
+        sphere_material.set_basecolor(np.array([0, 0, 1, 0.5]))
         sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 0, -4]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.size = 1
@@ -477,7 +477,7 @@ class ThreeSpheres(Scene):
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
         sphere_material = materials.LambertianMaterial()
-        sphere_material.set_basecolor(np.array([1, 0, 0]))
+        sphere_material.set_basecolor(np.array([1, 0, 0, 0.6]))
         sphere = meshes.Mesh(name='Sphere 3', position=np.array([-2, 0, -4]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.size = 1
@@ -504,7 +504,7 @@ class Wave(Scene):
         wave = meshes.Mesh(name='Wave 1', position=np.array([0, 0, -2]), geometry=wave_geometry,
                              material=wave_material)
 
-        wave_material.set_basecolor(np.array([1.0, 0.6, 0]))
+        wave_material.set_basecolor(np.array([1.0, 0.6, 0, 0.6]))
 
         self.add(wave)
         self.add(light_ambient)
@@ -529,7 +529,7 @@ class WaveBacklight(Scene):
         wave = meshes.Mesh(name='Wave 1', position=np.array([0, 0, -2]), geometry=wave_geometry,
                              material=wave_material)
 
-        wave_material.set_basecolor(np.array([1.0, 0.6, 0]))
+        wave_material.set_basecolor(np.array([1.0, 0.6, 0, 0.6]))
 
         self.add(wave)
         self.add(light_ambient)

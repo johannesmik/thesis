@@ -1,7 +1,7 @@
 #version 130
 
 uniform sampler2D colormap;
-uniform vec3 basecolor;
+uniform vec4 basecolor;
 
 in vec3 normal0;
 in vec2 texcoords0;
@@ -17,16 +17,16 @@ struct AmbientLight
 };
 uniform AmbientLight ambientlights[MAX_AMBIENT_LIGHTS];
 
-vec3 ambientcolor(vec3 basecolor, AmbientLight light){
-    return basecolor *  light.color.rgb;
+vec4 ambientcolor(vec4 basecolor, AmbientLight light){
+    return basecolor *  light.color;
 }
 
 
 void main(){
 
-    vec3 ambient = vec3(0, 0, 0);
+    vec4 ambient = vec4(0, 0, 0, 0);
     for(int i = 0; i < MAX_AMBIENT_LIGHTS; i++){
-        ambient +=  ambientcolor(basecolor + texture2D(colormap, texcoords0).rgb, ambientlights[i]);
+        ambient +=  ambientcolor(basecolor + texture2D(colormap, texcoords0), ambientlights[i]);
     }
-    gl_FragColor = clamp(vec4(ambient, 1), 0., 1.0);
+    gl_FragColor = clamp(ambient, 0., 1.0);
 }
