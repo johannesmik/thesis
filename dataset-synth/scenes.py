@@ -461,7 +461,7 @@ class ThreeSpheres(Scene):
         super(ThreeSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='4 Three Spheres')
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
-        sphere_material = materials.LambertianMaterial()
+        sphere_material = materials.BlinnPhongMaterial(specularity=50.0, specular_color=np.array([0.62, 0.62, 0.62, 0.62]))
         sphere_material.set_basecolor(np.array([0, 1, 0]))
         sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -3.5]), geometry=sphere_geometry,
                              material=sphere_material)
@@ -476,7 +476,7 @@ class ThreeSpheres(Scene):
         self.add(sphere)
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
-        sphere_material = materials.BlinnPhongMaterial(specularity=100.0, specular_color=np.array([0, 0, 0]))
+        sphere_material = materials.LambertianMaterial()
         sphere_material.set_basecolor(np.array([1, 0, 0]))
         sphere = meshes.Mesh(name='Sphere 3', position=np.array([-2, 0, -4]), geometry=sphere_geometry,
                              material=sphere_material)

@@ -117,6 +117,7 @@ if __name__ == '__main__':
         scene.remove_lights()
         scene.add(ir_light)
         for mesh in scene.meshes:
+            # TODO Replace this
             mesh.material = materials.LambertianMaterial()
         for t in range(frames):
             camera.set_current_frame(t)

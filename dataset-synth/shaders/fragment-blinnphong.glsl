@@ -157,9 +157,11 @@ vec3 specular_intensity(in SpotLight light, in vec3 normal0, in vec3 position_w,
     vec3 H = normalize(V+L);
 
     // Check if angle (between ray-direction and cone-direction) is within the limits
-    float angle = acos(dot(direction, normalize(light.direction)));
+    float angle = acos(dot(L, normalize(light.direction)));
     if (angle > light.cone_angle)
         return vec3(0, 0, 0);
+
+    float theta = dot(normal0, H);
 
     if (light.color.rgb != vec3(0, 0, 0)) {
         vec3 intensity = pow(theta, specularity) * vec3(1, 1, 1);
