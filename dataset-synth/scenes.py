@@ -467,7 +467,7 @@ class ThreeSpheres(Scene):
         super(ThreeSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='4 Three Spheres')
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
-        sphere_material = materials.BlinnPhongMaterial(specularity=50.0, specular_color=np.array([0.62, 0.62, 0.62, 0.62]))
+        sphere_material = materials.BlinnPhongMaterial(specularity=80.0)
         sphere_material.set_basecolor(np.array([0, 1, 0, 0.3]))
         sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -3.5]), geometry=sphere_geometry,
                              material=sphere_material)
@@ -489,11 +489,18 @@ class ThreeSpheres(Scene):
         sphere.size = 1
         self.add(sphere)
 
+        square_material = materials.LambertianMaterial()
+        square_material.set_basecolor(np.array([1, 1, 1, 0.6]))
+        square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -6.0]), geometry=meshes.SquareGeometry(),
+                             material=square_material)
+        square.set_size(5)
+        self.add(square)
+
         self.add(light_ambient)
         self.add(light_pointlight1)
 
     def _set_lights(self):
-        light_ambient.set_parameters(color=np.array([0.5, 0.5, 0.5, 0.5]))
+        light_ambient.set_parameters(color=np.array([0.2, 0.2, 0.2, 0.2]))
         light_pointlight1.set_parameters(position=np.array([5, 5, 5]),
                                          color=np.array([1, 1, 1, 1]),
                                          falloff=0.0)
