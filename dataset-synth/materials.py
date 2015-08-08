@@ -133,7 +133,8 @@ class AmbientMaterial(BaseMaterial):
 
 
 class LambertianMaterial(BaseMaterial):
-    pass
+    def __init__(self):
+        super(LambertianMaterial, self).__init__()
 
 
 class BlinnPhongMaterial(BaseMaterial):
@@ -154,3 +155,9 @@ class NormalMaterial(BaseMaterial):
 
 class DepthMaterial(BaseMaterial):
     pass
+
+class DataMaterial(BaseMaterial):
+    def __init__(self, data):
+        super(DataMaterial, self).__init__()
+
+        self.uniforms['data'] = data

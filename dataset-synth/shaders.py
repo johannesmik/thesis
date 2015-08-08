@@ -72,3 +72,7 @@ class ShaderLib:
                                  ['position', 'color', 'normal', 'texcoords'],
                                  ['PMatrix', 'MMatrix', 'VMatrix', 'colormap', 'normalmap', 'depthmap', 'basecolor',
                                   'use_normalmap', 'use_colormap', 'specularity', 'specular_color', 'ir_active'])
+
+        self.data = Shader('shaders/vertex.glsl', 'shaders/fragment-data.glsl',
+                                  ['position'],
+                                  ['PMatrix', 'MMatrix', 'VMatrix', 'data'])

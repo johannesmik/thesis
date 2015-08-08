@@ -62,6 +62,8 @@ class Context:
                 shader = self.shaderlib.lambertian
             elif isinstance(mesh.material, materials.BlinnPhongMaterial):
                 shader = self.shaderlib.blinnphong
+            elif isinstance(mesh.material, materials.DataMaterial):
+                shader = self.shaderlib.data
 
             glUseProgram(shader.program)
 
@@ -256,7 +258,7 @@ class Context:
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
-    def screenshot_bw(self, scene, camera, filename, verbose=True):
+    def screenshot_bw(self, scene, camera, filename, channel=0, verbose=True):
         """
         32 bit float black and white screenshot of the current view.
 
@@ -265,6 +267,15 @@ class Context:
         :return: None
         """
 
+        if channel == 0:
+            channel = GL_RED
+        elif channel == 1:
+            channel = GL_GREEN
+        elif channel == 2:
+            channel = GL_BLUE
+        else:
+            channel = GL_RED
+
         filename = self._unique_filename(filename)
 
         # Draw to renderbuffer
@@ -272,7 +283,7 @@ class Context:
         glBindFramebuffer(GL_FRAMEBUFFER, self.fbo)
         glBindRenderbuffer(GL_RENDERBUFFER, self.rbo)
         self.render(scene, camera)
-        gl_buffer = glReadPixels(0, 0, self.width, self.height, GL_RED, GL_FLOAT)
+        gl_buffer = glReadPixels(0, 0, self.width, self.height, channel, GL_FLOAT)
         image = Image.frombytes(mode="F", size=(self.width, self.height), data=gl_buffer)
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
         with open(filename, 'w') as f:

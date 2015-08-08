@@ -114,6 +114,22 @@ if __name__ == '__main__':
         scene.remove_object(ir_light)
         scene.recover_lights()
         c.toggle_ir()
+        c.relink_shaders()
+
+        # k_d, k_s, n maps of IR
+        for mesh in scene.meshes:
+            kd_ir = mesh.material.uniforms.get('basecolor', np.array([0, 0, 0, 0]))[3]
+            ks_ir = mesh.material.uniforms.get('specular_color', np.array([1, 1, 1, 1]))[3]
+            n_ir = mesh.material.uniforms.get('specularity', 50)
+
+            mesh.material = materials.DataMaterial(data=np.array([kd_ir, ks_ir, n_ir, 0]))
+        for t in range(frames):
+            camera.set_current_frame(t)
+            c.render(scene, camera)
+            c.screenshot_bw(scene, camera, "%s/%s_%04d_kd.tiff" % (path, stripped_name, t), verbose=verbosity, channel=0)
+            c.screenshot_bw(scene, camera, "%s/%s_%04d_ks.tiff" % (path, stripped_name, t), verbose=verbosity, channel=1)
+            c.screenshot_bw(scene, camera, "%s/%s_%04d_n.tiff" % (path, stripped_name, t), verbose=verbosity, channel=2)
+            time.sleep(.5)
 
         # Normal
         for mesh in scene.meshes:
