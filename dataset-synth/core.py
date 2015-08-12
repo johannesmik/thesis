@@ -56,7 +56,7 @@ class Object3D(object):
 
     @property
     def modelmatrix(self):
-        return np.dot(np.dot(self.rotationmatrix, self.translationmatrix), self.scalematrix)
+        return np.dot(np.dot(self.translationmatrix, self.rotationmatrix), self.scalematrix)
 
     def set_size(self, *args):
         if len(args) == 1:

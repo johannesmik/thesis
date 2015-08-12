@@ -15,7 +15,10 @@ out vec3 position_c;
 
 void main() {
     // Passing variables to fragment shader
-    normal0 = normalize(normal);
+
+    // Normal in World Space
+    mat3 MMatrix_rot = mat3(MMatrix[0].xyz, MMatrix[1].xyz, MMatrix[2].xyz);
+    normal0 = normalize(MMatrix_rot * normal);
     texcoords0 = texcoords;
 
     // Position in World Space
