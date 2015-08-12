@@ -18,6 +18,10 @@ light_pointlight2 = lights.PointLight(name='Point Light 2',
                                      position=np.array([0., 0., 0.]),
                                      color=np.array(np.array([1., 1., 1., 1.])),
                                      falloff=1.0)
+light_pointlight3 = lights.PointLight(name='Point Light 3',
+                                     position=np.array([0., 0., 0.]),
+                                     color=np.array(np.array([1., 1., 1., 1.])),
+                                     falloff=1.0)
 light_directional = lights.DirectionalLight(name='Directional Light', color=np.array([1, 1, 1, 1]), direction=np.array([0, 0, -1]))
 
 light_spotlight = lights.SpotLight(position=np.array([0, 0, 0]), color=np.array([1, 1, 1, 1]), falloff=0.1,
@@ -454,14 +458,14 @@ class ThreeSpheres(Scene):
         super(ThreeSpheres, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Three Spheres')
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
-        sphere_material = materials.BlinnPhongMaterial(specularity=80.0)
+        sphere_material = materials.BlinnPhongMaterial(specularity=80.0, specular_color=np.array([1, 0, 1, 0.7]))
         sphere_material.set_basecolor(np.array([0, 1, 0, 0.3]))
         sphere = meshes.Mesh(name='Sphere 1', position=np.array([0, 0, -3.5]), geometry=sphere_geometry,
                              material=sphere_material)
         self.add(sphere)
 
         sphere_geometry = meshes.IcosphereGeometry(subdivisions=3)
-        sphere_material = materials.BlinnPhongMaterial(specularity=50.0)
+        sphere_material = materials.BlinnPhongMaterial(specularity=50.0, specular_color=np.array([1, 1, 0, 0.9]))
         sphere_material.set_basecolor(np.array([0, 0, 1, 0.1]))
         sphere = meshes.Mesh(name='Sphere 2', position=np.array([2, 0, -4]), geometry=sphere_geometry,
                              material=sphere_material)
@@ -501,11 +505,13 @@ class Monkey(Scene):
     def __init__(self):
         super(Monkey, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Monkey Suzanne')
 
-        monkey_geometry = meshes.ObjectFile('../assets/suzanne_subd2.obj')
+        z_translation = -1.4
+
+        monkey_geometry = meshes.ObjectFile('../assets/threed-objects/suzanne_subd2.obj')
         monkey_material = materials.LambertianMaterial()
         monkey_material.set_basecolor(np.array([0.815, 0.588, 0.533, 0.4]))
         #monkey_material.add_colormap("../assets/suzanne-texture.png")
-        monkey = meshes.Mesh(name='Suzanne', position=np.array([0, 0, -2]), geometry=monkey_geometry,
+        monkey = meshes.Mesh(name='Suzanne', position=np.array([0, 0, z_translation]), geometry=monkey_geometry,
                              material=monkey_material)
         self.add(monkey)
 
@@ -513,7 +519,7 @@ class Monkey(Scene):
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.BlinnPhongMaterial(specularity=100, specular_color=np.array([0.2, 0.2, 0.2, 0.2]))
         sphere_material.set_basecolor(np.array([0.8, 0.8, 0.8, 0.8]))
-        sphere = meshes.Mesh(name='Left Eye', position=np.array([0.19551, 0.14625, -(2 -0.32591)]), geometry=sphere_geometry,
+        sphere = meshes.Mesh(name='Left Eye', position=np.array([0.19551, 0.14625, z_translation + 0.32591]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.set_size(0.145)
         self.add(sphere)
@@ -521,7 +527,7 @@ class Monkey(Scene):
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.BlinnPhongMaterial(specularity=100, specular_color=np.array([0.2, 0.2, 0.2, 0.2]))
         sphere_material.set_basecolor(np.array([0.8, 0.8, 0.8, 0.8]))
-        sphere = meshes.Mesh(name='Right Eye', position=np.array([-0.19551, 0.14625, -(2 -0.32591)]), geometry=sphere_geometry,
+        sphere = meshes.Mesh(name='Right Eye', position=np.array([-0.19551, 0.14625, z_translation + 0.32591]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.set_size(0.145)
         self.add(sphere)
@@ -530,7 +536,7 @@ class Monkey(Scene):
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.BlinnPhongMaterial(specularity=25, specular_color=np.array([1, 1, 1, 1]))
         sphere_material.set_basecolor(np.array([0., 0., 0., 0.]))
-        sphere = meshes.Mesh(name='Left pupil', position=np.array([0.19838, 0.14625, -(2 -0.41198)]), geometry=sphere_geometry,
+        sphere = meshes.Mesh(name='Left pupil', position=np.array([0.19838, 0.14625, z_translation + 0.41198]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.set_size(0.065)
         self.add(sphere)
@@ -538,7 +544,7 @@ class Monkey(Scene):
         sphere_geometry = meshes.IcosphereGeometry()
         sphere_material = materials.BlinnPhongMaterial(specularity=25, specular_color=np.array([1, 1, 1, 1]))
         sphere_material.set_basecolor(np.array([0., 0., 0., 0.]))
-        sphere = meshes.Mesh(name='Right pupil', position=np.array([-0.19838, 0.14625, -(2 -0.41198)]), geometry=sphere_geometry,
+        sphere = meshes.Mesh(name='Right pupil', position=np.array([-0.19838, 0.14625, z_translation + 0.41198]), geometry=sphere_geometry,
                              material=sphere_material)
         sphere.set_size(0.065)
         self.add(sphere)
@@ -551,14 +557,16 @@ class Monkey(Scene):
         square.set_size(6)
         self.add(square)
 
-        #self.add(light_pointlight1)
+        self.add(light_pointlight1)
         self.add(light_pointlight2)
-        #self.add(light_ambient)
+        self.add(light_pointlight3)
+        self.add(light_ambient)
 
     def _set_lights(self):
-        #light_pointlight1.set_parameters(position=np.array([0, 4, 0]), color=np.array([1, 1, 1, 1]), falloff=0.05)
-        light_pointlight2.set_parameters(position=np.array([1.5, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.0)
-        #light_ambient.set_parameters(color=np.array([0.3, 0.3, 0.3, 1]))
+        light_pointlight1.set_parameters(position=np.array([-1.5, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.05)
+        light_pointlight2.set_parameters(position=np.array([1.5, 2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.05)
+        light_pointlight3.set_parameters(position=np.array([0, -2, 0]), color=np.array([1, 1, 1, 1]), falloff=0.05)
+        light_ambient.set_parameters(color=np.array([0.1, 0.1, .1, .1]))
 
 
 class Wave(Scene):
@@ -609,26 +617,52 @@ class WaveBacklight(Scene):
                                          color=np.array([1, 1, 1, 1]),
                                          falloff=0.05)
 
-class ColoredBoxes(Scene):
+class ThreeBoxes(Scene):
     """ Three colored/textured boxes """
-    # TODO color them
 
     def __init__(self):
-        super(ColoredBoxes, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='7 Colored Boxes')
+        super(ThreeBoxes, self).__init__(backgroundcolor=np.array([1, 1, 1, 1]), name='Three Boxes')
 
-        box_geometry = meshes.BoxGeometry()
-        box_material = materials.LambertianMaterial()
-        box = meshes.Mesh(name='Box 1', position=np.array([0, 0, -2]), geometry=box_geometry,
+        box_geometry = meshes.ObjectFile('../assets/threed-objects/box.obj')
+        box_material = materials.BlinnPhongMaterial(specularity=80.0, specular_color=np.array([1, 0, 1, 0.7]))
+        box_material.set_basecolor(np.array([0, 1, 0, 0.3]))
+        box = meshes.Mesh(name='Box 1', position=np.array([0, 0, -3.5]), geometry=box_geometry,
                              material=box_material)
-
-        box.set_size(0.75, 2, 0.5)
-
+        box.set_size(.6, .6, .6)
+        box.rotation = np.array([0, np.pi/4, 0])
         self.add(box)
+
+        box_geometry = meshes.ObjectFile('../assets/threed-objects/box.obj')
+        box_material = materials.BlinnPhongMaterial(specularity=50.0, specular_color=np.array([1, 1, 0, 0.9]))
+        box_material.set_basecolor(np.array([0, 0, 1, 0.1]))
+        box = meshes.Mesh(name='Box 2', position=np.array([2, 0, -4]), geometry=box_geometry,
+                             material=box_material)
+        box.set_size(.6, .6, .6)
+        box.rotation = np.array([0, np.pi/4, 0])
+        self.add(box)
+
+        box_geometry = meshes.ObjectFile('../assets/threed-objects/box.obj')
+        box_material = materials.LambertianMaterial()
+        box_material.set_basecolor(np.array([1, 0, 0, 0.6]))
+        box = meshes.Mesh(name='Box 2', position=np.array([-2, 0, -4]), geometry=box_geometry,
+                             material=box_material)
+        box.set_size(.6, .6, .6)
+        box.rotation = np.array([0, np.pi/4, 0])
+        self.add(box)
+
+        # Background plane
+        square_material = materials.LambertianMaterial()
+        square_material.set_basecolor(np.array([1, 1, 1, 0.65]))
+        square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -7.5]), geometry=meshes.SquareGeometry(),
+                         material=square_material)
+        square.set_size(6)
+        self.add(square)
+
         self.add(light_ambient)
         self.add(light_pointlight1)
 
     def _set_lights(self):
         light_ambient.set_parameters(color=np.array([0.2, 0.2, 0.2, 1]))
-        light_pointlight1.set_parameters(position=np.array([1, 1, 1]),
+        light_pointlight1.set_parameters(position=np.array([5, 5, 5]),
                                          color=np.array([1, 1, 1, 1]),
-                                         falloff=0.2)
+                                         falloff=0.0)
