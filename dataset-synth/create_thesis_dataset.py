@@ -30,12 +30,8 @@ if __name__ == '__main__':
 
     verbosity = False
 
-    if len(sys.argv) == 3:
-        frames = int(sys.argv[1])
-        path = sys.argv[2]
-    else:
-        frames = 5
-        path = "~/dataset"
+    frames = 1
+    path = "~/dataset"
 
     path = os.path.expanduser(path)
 
@@ -49,13 +45,7 @@ if __name__ == '__main__':
 
     ## Setup camera movement: Move around (0, 0, -2) in a ccw rotation
     camera = cameras.PerspectiveCamera2()
-    r = 2.0
-    w = 0.0
-    for t in range(frames):
-        w = 2 * t * np.pi / (frames - 1)
-        print (w / np.pi)
-        camera.set_frame(t, position=np.array([r * np.sin(w), 0, r * np.cos(w) -2]), rotation=np.array([0, w, 0]))
-
+    camera.set_frame(0, position=np.array([0, 0, 0]), rotation=np.array([0, 0, 0]))
 
     ## Setup Lights
     ambientlight = lights.AmbientLight(color=np.array([0.2, 0.2, 0.2, 1]))
@@ -71,21 +61,7 @@ if __name__ == '__main__':
     scene_sphere.add(sphere)
     scene_sphere.add(pointlight_origin)
 
-    ## Setup Head Scene
-    scene_head = scenes.Scene(backgroundcolor=np.array([0, 0, 0, 1]), name="head")
-    head_geometry = meshes.ObjectFile('../assets/humanface.obj')
-    head_material = materials.BlinnPhongMaterial()
-    head_material.add_colormap("../assets/humanface-texture.png")
-    head = meshes.Mesh(name='Face', position=np.array([0, 0, -2]), geometry=head_geometry, material=head_material)
-    scene_head.add(head)
-    scene_head.add(ambientlight)
-    scene_head.add(pointlight_origin)
-    # scene_head.add(pointlight_right)
-
-
-
-    dataset_scenes = [scenes.ThreeSpheres(), scene_head]
-    dataset_scenes = [scenes.SpecularSphere()]
+    dataset_scenes = [scenes.ThreeSpheres(), scenes.Monkey(), scenes.ThreeBoxes(), scenes.SpecularSphere()]
 
     for scene in dataset_scenes:
 
@@ -97,8 +73,7 @@ if __name__ == '__main__':
         for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
-            save_yaml("%s/%s_%04d_camera.yaml" % (path, stripped_name, t), scene, camera, t, verbose=verbosity)
-            c.screenshot(scene, camera, "%s/%s_%04d_color.tiff" % (path, stripped_name, t), verbose=verbosity)
+            c.screenshot(scene, camera, "%s/%s_color.tiff" % (path, stripped_name), verbose=verbosity)
             time.sleep(.5)
 
         # IR
@@ -110,8 +85,8 @@ if __name__ == '__main__':
             camera.set_current_frame(t)
             ir_light.set_position(camera.position)
             c.render(scene, camera)
-            c.screenshot_bw(scene, camera, "%s/%s_%04d_ir.tiff" % (path, stripped_name, t), verbose=verbosity)
-            time.sleep(.5)
+            c.screenshot_bw(scene, camera, "%s/%s_ir.tiff" % (path, stripped_name), verbose=verbosity)
+            time.sleep(1.5)
         scene.remove_object(ir_light)
         scene.recover_lights()
         c.toggle_ir()
@@ -121,15 +96,15 @@ if __name__ == '__main__':
         for mesh in scene.meshes:
             kd_ir = mesh.material.uniforms.get('basecolor', np.array([0, 0, 0, 0]))[3]
             ks_ir = mesh.material.uniforms.get('specular_color', np.array([0, 0, 0, 0]))[3]
-            n_ir = mesh.material.uniforms.get('specularity', 0)
-
+            n_ir = mesh.material.uniforms.get('specularity', 50)
             mesh.material = materials.DataMaterial(data=np.array([kd_ir, ks_ir, n_ir, 0]))
+
         for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
-            c.screenshot_bw(scene, camera, "%s/%s_%04d_kd.tiff" % (path, stripped_name, t), verbose=verbosity, channel=0)
-            c.screenshot_bw(scene, camera, "%s/%s_%04d_ks.tiff" % (path, stripped_name, t), verbose=verbosity, channel=1)
-            c.screenshot_bw(scene, camera, "%s/%s_%04d_n.tiff" % (path, stripped_name, t), verbose=verbosity, channel=2)
+            c.screenshot_bw(scene, camera, "%s/%s_kd.tiff" % (path, stripped_name), verbose=verbosity, channel=0)
+            c.screenshot_bw(scene, camera, "%s/%s_ks.tiff" % (path, stripped_name), verbose=verbosity, channel=1)
+            c.screenshot_bw(scene, camera, "%s/%s_n.tiff" % (path, stripped_name), verbose=verbosity, channel=2)
             time.sleep(.5)
 
         # Normal
@@ -138,7 +113,7 @@ if __name__ == '__main__':
         for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
-            c.screenshot(scene, camera, "%s/%s_%04d_normal.tiff" % (path, stripped_name, t), verbose=verbosity)
+            c.screenshot(scene, camera, "%s/%s_normal.tiff" % (path, stripped_name), verbose=verbosity)
             time.sleep(.5)
 
         # Depth
@@ -147,5 +122,5 @@ if __name__ == '__main__':
         for t in range(frames):
             camera.set_current_frame(t)
             c.render(scene, camera)
-            c.screenshot_bw(scene, camera, "%s/%s_%04d_depth.tiff" % (path, stripped_name, t), verbose=verbosity)
+            c.screenshot_bw(scene, camera, "%s/%s_depth.tiff" % (path, stripped_name), verbose=verbosity)
             time.sleep(.5)
