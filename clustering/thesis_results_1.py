@@ -1,5 +1,3 @@
-__author__ = 'johannes'
-
 """
 Images for the results in Section Material Estimation -- Experiments
 
@@ -17,75 +15,75 @@ import estimate
 scene = 'ThreeBoxes'
 
 if scene == 'ThreeSpheres':
-    color_image = Image.open("assets/ThreeSpheres_color.tiff")
+    color_image = Image.open("../assets/clustering/ThreeSpheres_color.tiff")
     color_image = np.asarray(color_image, dtype=np.float32)
-    depth_image = Image.open("assets/ThreeSpheres_depth.tiff")
+    depth_image = Image.open("../assets/clustering/ThreeSpheres_depth.tiff")
     depth_image = np.asarray(depth_image, dtype=np.float32) * 255
-    ir_image = Image.open("assets/ThreeSpheres_ir.tiff")
+    ir_image = Image.open("../assets/clustering/ThreeSpheres_ir.tiff")
     ir_image = np.asarray(ir_image, dtype=np.float32) * 255
-    normal_image = Image.open("assets/ThreeSpheres_normal_pca.tiff")
+    normal_image = Image.open("../assets/clustering/ThreeSpheres_normal_pca.tiff")
     normal_image = np.asarray(normal_image, dtype=np.float32)
     normals = (normal_image / 255.) * 2. - 1.
     normals = normals / np.linalg.norm(normals, axis=2)[:,:,None]
-    kd_image = Image.open("assets/ThreeSpheres_kd.tiff")
+    kd_image = Image.open("../assets/clustering/ThreeSpheres_kd.tiff")
     kd_image = np.asarray(kd_image, dtype=np.float32)
-    ks_image = Image.open("assets/ThreeSpheres_ks.tiff")
+    ks_image = Image.open("../assets/clustering/ThreeSpheres_ks.tiff")
     ks_image = np.asarray(ks_image, dtype=np.float32)
-    n_image = Image.open("assets/ThreeSpheres_n.tiff")
+    n_image = Image.open("../assets/clustering/ThreeSpheres_n.tiff")
     n_image = np.asarray(n_image, dtype=np.float32)
 
 elif scene == 'ThreeBoxes':
-    color_image = Image.open("assets/ThreeBoxes_color.tiff")
+    color_image = Image.open("../assets/clustering/ThreeBoxes_color.tiff")
     color_image = np.asarray(color_image, dtype=np.float32)
-    depth_image = Image.open("assets/ThreeBoxes_depth.tiff")
+    depth_image = Image.open("../assets/clustering/ThreeBoxes_depth.tiff")
     depth_image = np.asarray(depth_image, dtype=np.float32) * 255
-    ir_image = Image.open("assets/ThreeBoxes_ir.tiff")
+    ir_image = Image.open("../assets/clustering/ThreeBoxes_ir.tiff")
     ir_image = np.asarray(ir_image, dtype=np.float32) * 255
-    normal_image = Image.open("assets/ThreeBoxes_normal_pca.tiff")
+    normal_image = Image.open("../assets/clustering/ThreeBoxes_normal_pca.tiff")
     normal_image = np.asarray(normal_image, dtype=np.float32)
     normals = (normal_image / 255.) * 2. - 1.
     normals = normals / np.linalg.norm(normals, axis=2)[:,:,None]
-    kd_image = Image.open("assets/ThreeBoxes_kd.tiff")
+    kd_image = Image.open("../assets/clustering/ThreeBoxes_kd.tiff")
     kd_image = np.asarray(kd_image, dtype=np.float32)
-    ks_image = Image.open("assets/ThreeBoxes_ks.tiff")
+    ks_image = Image.open("../assets/clustering/ThreeBoxes_ks.tiff")
     ks_image = np.asarray(ks_image, dtype=np.float32)
-    n_image = Image.open("assets/ThreeBoxes_n.tiff")
+    n_image = Image.open("../assets/clustering/ThreeBoxes_n.tiff")
     n_image = np.asarray(n_image, dtype=np.float32)
 
 elif scene == 'SpecularSphere':
-    color_image = Image.open("assets/SpecularSphere_color.tiff")
+    color_image = Image.open("../assets/clustering/SpecularSphere_color.tiff")
     color_image = np.asarray(color_image, dtype=np.float32)
-    depth_image = Image.open("assets/SpecularSphere_depth.tiff")
+    depth_image = Image.open("../assets/clustering/SpecularSphere_depth.tiff")
     depth_image = np.asarray(depth_image, dtype=np.float32) * 255
-    ir_image = Image.open("assets/SpecularSphere_ir.tiff")
+    ir_image = Image.open("../assets/clustering/SpecularSphere_ir.tiff")
     ir_image = np.asarray(ir_image, dtype=np.float32) * 255
-    normal_image = Image.open("assets/SpecularSphere_normal_pca.tiff")
+    normal_image = Image.open("../assets/clustering/SpecularSphere_normal_pca.tiff")
     normal_image = np.asarray(normal_image, dtype=np.float32)
     normals = (normal_image / 255.) * 2. - 1.
     normals = normals / np.linalg.norm(normals, axis=2)[:,:,None]
-    kd_image = Image.open("assets/SpecularSphere_kd.tiff")
+    kd_image = Image.open("../assets/clustering/SpecularSphere_kd.tiff")
     kd_image = np.asarray(kd_image, dtype=np.float32)
-    ks_image = Image.open("assets/SpecularSphere_ks.tiff")
+    ks_image = Image.open("../assets/clustering/SpecularSphere_ks.tiff")
     ks_image = np.asarray(ks_image, dtype=np.float32)
-    n_image = Image.open("assets/SpecularSphere_n.tiff")
+    n_image = Image.open("../assets/clustering/SpecularSphere_n.tiff")
     n_image = np.asarray(n_image, dtype=np.float32)
 
 elif scene == 'Monkey':
-    color_image = Image.open("assets/MonkeySuzanne_color.tiff")
+    color_image = Image.open("../assets/clustering/MonkeySuzanne_color.tiff")
     color_image = np.asarray(color_image, dtype=np.float32)
-    depth_image = Image.open("assets/MonkeySuzanne_depth.tiff")
+    depth_image = Image.open("../assets/clustering/MonkeySuzanne_depth.tiff")
     depth_image = np.asarray(depth_image, dtype=np.float32) * 255
-    ir_image = Image.open("assets/MonkeySuzanne_ir.tiff")
+    ir_image = Image.open("../assets/clustering/MonkeySuzanne_ir.tiff")
     ir_image = np.asarray(ir_image, dtype=np.float32) * 255
-    normal_image = Image.open("assets/MonkeySuzanne_normal_pca.tiff")
+    normal_image = Image.open("../assets/clustering/MonkeySuzanne_normal_pca.tiff")
     normal_image = np.asarray(normal_image, dtype=np.float32)
     normals = (normal_image / 255.) * 2. - 1.
     normals = normals / np.linalg.norm(normals, axis=2)[:,:,None]
-    kd_image = Image.open("assets/MonkeySuzanne_kd.tiff")
+    kd_image = Image.open("../assets/clustering/MonkeySuzanne_kd.tiff")
     kd_image = np.asarray(kd_image, dtype=np.float32)
-    ks_image = Image.open("assets/MonkeySuzanne_ks.tiff")
+    ks_image = Image.open("../assets/clustering/MonkeySuzanne_ks.tiff")
     ks_image = np.asarray(ks_image, dtype=np.float32)
-    n_image = Image.open("assets/MonkeySuzanne_n.tiff")
+    n_image = Image.open("../assets/clustering/MonkeySuzanne_n.tiff")
     n_image = np.asarray(n_image, dtype=np.float32)
 
 # Input images
