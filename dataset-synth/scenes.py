@@ -652,7 +652,7 @@ class ThreeBoxes(Scene):
 
         # Background plane
         square_material = materials.LambertianMaterial()
-        square_material.set_basecolor(np.array([1, 1, 1, 0.65]))
+        square_material.set_basecolor(np.array([1, 1, 1, 0.6]))
         square = meshes.Mesh(name='Square 1', position=np.array([0, 0, -7.5]), geometry=meshes.SquareGeometry(),
                          material=square_material)
         square.set_size(6)
