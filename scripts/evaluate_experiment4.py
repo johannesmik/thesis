@@ -1,100 +1,68 @@
 """
-Experiment 3 was about finding the variance of the intensity and depth using static scenes
-
-Each scene consists of 10 RGB-D-IR images.
-
+Experiment 4 tests if the material properties (specularity) can be detected using the kinect
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from sklearn.utils import shuffle
+import scipy.optimize
+import math
 
 import utils
 
-def plot_variance_histogram(mean, variance):
 
-    mean = mean.flatten()
-    variance = variance.flatten()
+def blinn(angle, k_diffuse, k_specular, n):
 
-    plt.figure()
-    plt.title('Histogram!')
+    angle = np.deg2rad(angle)
+    diffuse_term = k_diffuse * np.cos(angle)
+    specular_term = k_specular * np.power(np.cos(angle * 2), n)
+    return diffuse_term + specular_term
 
-    h, bedges = np.histogram(mean, 200, normed=True)
+def fit_to_blinn(angles, values):
+    popt, pcov = scipy.optimize.curve_fit(blinn, angles.astype(np.float64), values, p0=np.array([1.0, 0.0, 50], dtype=np.float64))
+    return popt
 
-    weights = np.zeros_like(mean)
+angles = np.array(range(0, 50, 5))
+aluminium_means = []
+paper_means = []
 
-    for i in range(200):
-        if i == 0:
-            weights[np.where((0 <= mean) & (mean < bedges[i]))] = 1 / (1 + h[i])
-        else:
-            weights[np.where((bedges[i-1] <= mean) & (mean < bedges[i]))] = 1 / (1 + h[i])
+path = os.path.expanduser('~/workspace/dataset-experiment4')
 
-    H, xedges, yedges = np.histogram2d(mean, variance,
-                                       bins=200,
-                                       range=[[0.001, 0.6], [0, 0.0001]],
-                                       normed=True,
-                                       weights=weights)
+for i in range(len(angles)):
 
-    print H
-    X, Y = np.meshgrid(xedges, yedges)
-    plt.pcolormesh(X, Y, H.T)
-    plt.colorbar()
-    #plt.set_aspect('equal')
+    ir = utils.read_blob("%s/ir_%d.blob" % (path, i), blob_image_type='ir')
+
+    aluminium_mean = np.mean(ir[178:193, 253:259])
+    paper_mean = np.mean(ir[153:168, 253:259])
+
+    # get the mean values of the border
+
+    aluminium_means.append(aluminium_mean)
+    paper_means.append(paper_mean)
+
+# plot_variance_histogram(ir_mean[np.where(0 < ir_mean)], ir_variance[np.where(0 < ir_mean)])
+plt.figure(figsize=(8, 6), dpi=150, facecolor='w', edgecolor='k')
+ax = plt.axes()
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.get_xaxis().tick_bottom()
+ax.get_yaxis().tick_left()
+
+plt.plot(angles, paper_means, 'ro', label='Paper')
+plt.plot(angles, aluminium_means, 'bo', label="Aluminium")
 
 
-scenes = ['data-livingroom', 'data-kitchen', 'data-balcony']
+paper_popt = fit_to_blinn(angles, paper_means)
+aluminium_popt = fit_to_blinn(angles, aluminium_means)
 
-scenes = ['data-livingroom']
+print "aluminium popt", aluminium_popt
+print "paper popt", paper_popt
 
-for scene in scenes:
+angles_cont = np.linspace(0, 60, 120)
+plt.plot(angles_cont, blinn(angles_cont, *aluminium_popt), c='b', label=None)
+plt.plot(angles_cont, blinn(angles_cont, *paper_popt), c='r',)
 
-    print "Scene: ", scene
-
-    ir_array = None
-    depth_array = None
-
-    path = os.path.expanduser('~/workspace/dataset-experiment3/%s' % scene)
-
-    for i in range(10):
-        ir = utils.read_blob("%s/ir_%d.blob" % (path, i), blob_image_type='ir')
-        depth = utils.read_blob("%s/depth_%d.blob" % (path, i), blob_image_type='depth')
-
-        # Stack on top of each other
-        if ir_array != None:
-            ir_array = np.dstack((ir_array, ir))
-            depth_array = np.dstack((depth_array, depth))
-        else:
-            ir_array = ir
-            depth_array = depth
-
-    ir_mean = np.mean(ir_array, axis=2)
-    ir_variance = np.var(ir_array, axis=2)
-    depth_variance = np.var(depth_array, axis=2)
-
-    print ir_array[158, 237, :], ir_mean[158, 237],  ir_variance[158, 237]
-    print ir_array[187, 295, :]
-    print ir_array[225, 110, :]
-
-    utils.show_image(ir_mean, 'ir mean scene %s' % scene)
-    utils.show_image(ir_variance, 'ir variance scene %s' % scene, minmax=(0, ir_variance.max()))
-    utils.show_image(depth_variance, 'depth variance scene %s' % scene, minmax=(0, depth_variance.max()))
-
-    plt.figure()
-    plt.scatter(ir_mean.flatten(), ir_variance.flatten(), c='red', s=1, alpha=0.3, edgecolors='none')
-
-    a = shuffle(ir_mean.flatten(), random_state=0)[:10000]
-    b = shuffle(ir_variance.flatten(), random_state=0)[:10000]
-    print "a size", a.size
-    # plot_variance_histogram(ir_mean[np.where(0 < ir_mean)], ir_variance[np.where(0 < ir_mean)])
-    plot_variance_histogram(ir_mean, ir_variance)
-
-    plt.figure()
-    plt.title('histogram test')
-    plt.hist(ir_mean.flatten(), 30, normed=1, facecolor='green', alpha=0.5)
-
-    # Load color image
-    color = utils.read_blob("%s/color_1.blob" % path, blob_image_type='color')
-    utils.show_image(color, 'color scene %s' % scene)
-
+plt.legend()
+plt.xlabel("Angle $\\varphi$ between camera axis / light direction and surface normal")
+plt.ylabel("mean IR Intensity")
 plt.show()

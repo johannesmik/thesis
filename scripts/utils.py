@@ -36,6 +36,7 @@ def read_blob(blob_filename, blob_image_type):
         a = a / 255.0
 
     if blob_image_type == "depth":
+        # Note: 4.5 meters is the maximum depth the blobs were acquired
         a = a / 4500.0
         a = np.clip(a, 0, 1)
         #a *= 255
@@ -45,6 +46,9 @@ def read_blob(blob_filename, blob_image_type):
         a = np.clip(a, 0, 1)
         #a *= 255
         #a = a.astype(np.uint8)
+
+    # Horizontally mirrors the image
+    a = a[:, ::-1]
 
     return a
 
