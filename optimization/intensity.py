@@ -23,30 +23,6 @@ texture<float, cudaTextureType2D, cudaReadModeElementType> depth_current;
 
 /* Light functions */
 
-inline __device__ float3 light_directional() {
-  return make_float3(0, 0, 1);
-}
-
-inline __device__ float3 light_point(float3 w) {
-  return normalize(w);
-}
-
-inline __device__ float attenuation(float falloff, float distance) {
-    return 1.0f / (1 + falloff * distance * distance);
-}
-
-/* INTENSITY FUNCTIONS */
-
-__device__ float intensity(const float3 &normal, const float3 &w) {
-
-  const float albedo = 0.8;
-  const float falloff = 1.0;
-  const float3 light = light_directional();
-
-  return attenuation(falloff, len(w)) * albedo * dot(normal, light);
-}
-
-
 extern "C"
 __global__ void intensity_prime(float *normal_out, float *intensity_change_out)
 {
@@ -135,7 +111,7 @@ intensity_prime = mod.get_function("intensity_prime")
 tex_depth_noise = mod.get_texref('depth_sensor')
 tex_depth_noise.set_address_mode(1, drv.address_mode.WRAP)
 tex_depth_noise.set_address_mode(2, drv.address_mode.WRAP)
-depth_image = Image.open("sphere_depth.tiff")
+depth_image = Image.open("../assets/testimages/sphere-depth.png")
 #depth_image = depth_image.filter(ImageFilter.GaussianBlur(2))
 depth_image = np.asarray(depth_image, dtype=np.float32)
 mu, sigma = 0, 0.0

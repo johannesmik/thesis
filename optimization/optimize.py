@@ -18,65 +18,12 @@ import utils
 
 mod = SourceModule("""
 // Should be uneven 5 or 7 or 9
+
 #define m_depth 5
 #define m_ir 5
 
-#include <cuda.h>
-#include "utils.cu"
-#include "intensities.cu"
-#include "normal.cu"
+#include "global_functions.cu"
 
-texture<float, cudaTextureType2D, cudaReadModeElementType> depth_sensor_tex;
-texture<float, cudaTextureType2D, cudaReadModeElementType> depth_current_tex;
-texture<float, cudaTextureType2D, cudaReadModeElementType> ir_current_tex;
-texture<float, cudaTextureType2D, cudaReadModeElementType> ir_sensor_tex;
-
-__device__ void set_depth_neighborhood(int2 pos, float neighborhood[m_depth][m_depth])
-{
-  /* returns the (m, m) depth neighborhood around pos. */
-  /* Loads texture memory into global memory (slow) */
-
-  const int left_border = (-1 + (m_ir + 1 )/ 2);
-
-  for (int i = 0; i < m_depth; ++i) {
-    for (int j = 0; j < m_depth; ++j) {
-      neighborhood[j][i] = tex2D(depth_current_tex, pos.x - left_border + i, pos.y - left_border + j);
-    }
-  }
-}
-
-__device__ float ir_local(int2 center_pos, int2 change_pos, float adjustment){
-  // Calculate the ir around center based on 'depth_current_tex', but adjust the depth of the pixel at change_pos
-  // Center_pos: screen coords
-  // Change_pos: screen coords
-
-  LambertianLightingModel lightingmodel = LambertianLightingModel();
-
-  float depth_neighborhood[m_depth][m_depth];
-  set_depth_neighborhood(center_pos, depth_neighborhood);
-  const float z = depth_neighborhood[(m_depth + 1) / 2][(m_depth + 1) / 2];
-
-  const int left_border = (-1 + (m_ir + 1 )/ 2);
-
-  // Adjust
-  depth_neighborhood[change_pos.y - center_pos.y + left_border][change_pos.x - center_pos.x + left_border] += adjustment;
-
-  const float3 normal = normal_cross(depth_neighborhood, center_pos);
-  const float ir_return = lightingmodel.intensity(normal, pixel_to_camera(center_pos.x, center_pos.y, z));
-
-  return ir_return;
-}
-
-inline __device__ float ir_local(int2 pos) {
-  // Calculate the ir intensity at the midpoint of (m, m) depth neighborhood around pos
-  return ir_local(pos, pos, 0.0);
-}
-
-inline __device__ float ir_local(int2 pos, float adjustment) {
-  // Calculate the ir intensity around center, but adjust the depth of the pixel at center
-  // pos: screen coords
-  return ir_local(pos, pos, adjustment);
-}
 
 extern "C"
 __global__ void energy_prime(float *energy_change_out){
@@ -110,7 +57,7 @@ __global__ void energy_prime(float *energy_change_out){
     for (int j = 0; j < m_ir; ++j) {
       int2 center = make_int2(x + i - left_border, y + j - left_border);
       int2 change = make_int2(x, y);
-      ir_after[j][i] = ir_local(center, change, h);
+      ir_after[j][i] = intensity_local(center, change, h);
     }
   }
 
@@ -131,17 +78,6 @@ __global__ void energy_prime(float *energy_change_out){
 
 }
 
-extern "C"
-__global__ void ir_image(float *ir_out)
-{
-    // Indexing
-  const int x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int y = blockIdx.y * blockDim.y + threadIdx.y;
-  const int elementPitch = blockDim.x * gridDim.x;
-  const int index = y * elementPitch + x;
-
-  ir_out[index] = ir_local(make_int2(x, y));
-}
 
 extern "C"
 __global__ void energy_normal(float3 *normal, float *energy_normal_out)
@@ -170,41 +106,6 @@ __global__ void energy_normal(float3 *normal, float *energy_normal_out)
   energy_normal_out[index] *= factor;
 }
 
-extern "C"
-__global__ void energy(float *energy_ir_out)
-{
-  // FIXME calculates the wrong energy
-
-  /* Steps to do:
-    - Calculate ir intensity
-    - Calculate normal of current point and adjacent pixels
-    - Calculate energy: ( ir intensity - ir_sensor )
-  */
-
-  LambertianLightingModel lightingmodel = LambertianLightingModel();
-
-  // Indexing
-  const int x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int y = blockIdx.y * blockDim.y + threadIdx.y;
-  const int elementPitch = blockDim.x * gridDim.x;
-  const int index = y * elementPitch + x;
-
-  float depth_neighborhood[m_depth][m_depth];
-  set_depth_neighborhood(make_int2(x, y), depth_neighborhood);
-
-  float ir_test = ir_local(make_int2(x, y));
-
-  float3 normal = normal_pca(depth_neighborhood, make_int2(x, y));
-  // float3 normal_c = normal_colorize(normal);
-
-  float ir_given = tex2D(ir_sensor_tex, x, y);
-  float ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
-
-  energy_ir_out[index] = pow(ir_given - ir_new, 2);
-  // ir_out[index] = ir_test;
-  // normal_out[index] = normal_c;
-
-}
 """, no_extern_c=True, include_dirs=[os.getcwd() + '/cuda'])
 
 class Optimizer(object):

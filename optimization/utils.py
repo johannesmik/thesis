@@ -1,7 +1,10 @@
+from __future__ import print_function
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-def show_image(image, title=None):
+import pycuda.driver as drv
+
+def show_image(image, title=None, colorbar=True):
 
     image_copy = image.copy()
 
@@ -29,7 +32,24 @@ def show_image(image, title=None):
 
     im = plt.imshow(image_copy, interpolation="nearest", cmap=cm, vmin=minimum, vmax=maximum)
 
-    # Set up the colorbar
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size=0.15, pad=0.05)
-    clb = plt.colorbar(im, cax)
+    if colorbar:
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size=0.15, pad=0.05)
+        clb = plt.colorbar(im, cax)
+
+def set_texture_border_mode(texture, mode='clamp'):
+    """
+    :param texture:
+    :param mode: 'clamp' or 'border'
+    """
+
+    if mode == 'clamp':
+        address_mode = drv.address_mode.CLAMP
+    elif mode == 'border':
+        address_mode = drv.address_mode.BORDER
+
+    texture.set_address_mode(0, address_mode)
+    texture.set_address_mode(1, address_mode)
+
+def update_texture(texture, numpy_array):
+    texture.set_array(drv.matrix_to_array(numpy_array, 'C'))

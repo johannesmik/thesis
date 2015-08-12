@@ -4,6 +4,7 @@
 #ifndef UTILS_CU
 #define UTILS_CU
 
+#include "cameras.cu"
 
 /* ADDITION */
 
@@ -23,6 +24,14 @@ inline __device__ float3 operator+(float3 a, float b) {
   return make_float3(a.x + b, a.y + b, a.z + b);
 }
 
+inline __device__ float4 operator+(float4 a, float4 b) {
+  return make_float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+}
+
+inline __device__ float4 operator+(float4 a, float b) {
+  return make_float4(a.x + b, a.y + b, a.z + b, a.w + b);
+}
+
 /* SUBTRACTION */
 
 inline __device__ float2 operator-(float2 a, float b) {
@@ -39,6 +48,14 @@ inline __device__ float3 operator-(float3 a, float b) {
 
 inline __device__ float3 operator-(float3 a, float3 b) {
   return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+inline __device__ float4 operator-(float4 a, float b) {
+  return make_float4(a.x - b, a.y - b, a.z - b, a.w - b);
+}
+
+inline __device__ float4 operator-(float4 a, float4 b) {
+  return make_float4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
 }
 
 /* UNARY MINUS */
@@ -86,6 +103,10 @@ inline __device__ float dot(float3 a, float3 b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+inline __device__ float dot(float4 a, float4 b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
 /* CROSS */
 
 inline __device__ float3 cross(float3 a, float3 b) {
@@ -94,7 +115,7 @@ inline __device__ float3 cross(float3 a, float3 b) {
 
 /* NORMALIZE */
 
-inline __device__ float3 normalize(float3 a) {
+inline  __device__ float3 normalize(float3 a) {
   float invLen = 1.0f / sqrtf(dot(a, a));
   return a * invLen;
 }
@@ -102,6 +123,10 @@ inline __device__ float3 normalize(float3 a) {
 /* LEN */
 
 inline __device__ float len(float3 a) {
+  return sqrtf(dot(a, a));
+}
+
+inline __device__ float len(float4 a) {
   return sqrtf(dot(a, a));
 }
 
@@ -150,6 +175,20 @@ __device__ float3 pixel_to_camera(int xs, int ys, float z)
   // From Pixel to Camera Coordinates
   const float x = z * (xs - ox) / fx;
   const float y = - (z * (ys - oy) / fy);
+
+  return make_float3(x, y, -z);
+}
+
+__device__ float3 pixel_to_camera(Camera &cam, int xs, int ys, float z)
+{
+  /*
+   xs, ys: pixel coordinates (non-negative)
+   z: depth (positive)
+  */
+
+  // From Pixel to Camera Coordinates
+  const float x = z * (xs - cam.ox()) / cam.fx();
+  const float y = - (z * (ys - cam.oy()) / cam.fy());
 
   return make_float3(x, y, -z);
 }
