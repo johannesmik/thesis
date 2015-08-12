@@ -9,3 +9,15 @@ Objects.blend currently contains three objects organized in the different blende
 3) A simple box.
 
 
+## tof-camera.blend
+
+This file is the first try to rebuild Kinect One characteristics in Blender... 
+
+After rendering, 4 images are put into the /tmp/test directory: Color, IR, Depth, and Normal image.
+
+Features:
+
+    - Realistic shading of the color image and ir image,
+    - Replicated shadowing artifacts in the depth image,
+    - 'Shaky' camera movements when rotating around the main object.
+
