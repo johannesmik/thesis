@@ -82,8 +82,10 @@ public:
     for (int i = 0; i < points_n; ++i)
       avg_dist += dist(world_points[i], center);
     avg_dist /= points_n;
-    const float radius = avg_dist * 2;
-    //const float radius = 200;
+    //const float radius = avg_dist * 2;
+
+    // TODO let user set this at runtime
+    const float radius = 0.08;
 
     // Calculate the average point location
     float3 avg = {0};
