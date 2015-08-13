@@ -31,8 +31,8 @@ public:
 
   __device__ float fx() { return m_fx; }
   __device__ float fy() { return m_fy; }
-  __device__ float ox() { return m_oy; }
-  __device__ float oy() { return m_ox; }
+  __device__ float ox() { return m_ox; }
+  __device__ float oy() { return m_oy; }
 
 private:
   float3 m_position;
