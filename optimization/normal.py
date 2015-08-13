@@ -28,6 +28,10 @@ if use_testimage:
     depth_image = Image.open("../assets/clustering/SpecularSphere_depth.tiff")
     depth_image = np.asarray(depth_image, dtype=np.float32)
     depth_image = depth_image * 10.0
+    mu, sigma = 0, 0.003
+    depth_image = depth_image + sigma * np.random.randn(*depth_image.shape) + mu
+    depth_image = depth_image.astype(np.float32)
+
 else:
     depth_image = Image.open("../assets/testimages/sphere-depth.png")
     depth_image = Image.open("../assets/optimization/head_depth.tiff")
