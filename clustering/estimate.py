@@ -252,6 +252,7 @@ def extract_angles(ir_image, centers, labels, binrange=(0, 90), bins=20, normals
 
     if normals is not None:
         ## TODO calculate normal image
+        print "warning: not implemented yet"
         pass
 
     n_clusters = centers.shape[0]

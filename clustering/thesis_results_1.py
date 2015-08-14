@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 import estimate
 
-scene = 'ThreeBoxes'
+scene = 'Monkey'
 
 if scene == 'ThreeSpheres':
     color_image = Image.open("../assets/clustering/ThreeSpheres_color.tiff")
