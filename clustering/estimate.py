@@ -114,7 +114,7 @@ def plot_clusters(centers, labels, features=None, title=''):
     if title == '':
         ax = plt.axes([0, 0, 1, 1])
     else:
-        plt.title('Quantized image (%d colors, K-Means, features: %s), %s' % (n_clusters, str(features), title))
+        plt.title(title)
     plt.axis('off')
     plt.imshow(image_show, vmin=np.min(codebook), vmax=np.max(codebook), cmap=cluster_cmap)
 
@@ -144,6 +144,8 @@ def plot_angle_intensities(angles_per_cluster, intensities_per_angle_per_cluster
     ax.get_yaxis().tick_left()
     plt.ylim([0, 1.05])
     plt.xlim([0, 95])
+    plt.ylabel('intensity', fontsize=18)
+    plt.xlabel('angle $\Theta_h$', fontsize=18)
     if title is not None:
         plt.title(title)
 

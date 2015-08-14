@@ -89,7 +89,6 @@ elif scene == 'Monkey':
 # Input images
 estimate.plot_image(color_image / 255.)
 estimate.plot_image(depth_image)
-estimate.plot_image(depth_image)
 
 # Cluster Image
 threshold = 0.99
@@ -121,8 +120,8 @@ ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 ax.get_xaxis().tick_bottom()
 ax.get_yaxis().tick_left()
-plt.xlabel('angle $\Theta_h$')
-plt.ylabel('intensity')
+plt.xlabel('angle $\Theta_h$', fontsize=18)
+plt.ylabel('intensity', fontsize=18)
 plt.ylim([0, 1.05])
 plt.xlim([0, 95])
 codebook = estimate.get_codebook(centers)
@@ -148,14 +147,24 @@ n_image_found = n_image_found.reshape((424, 512))
 
 # Plot k_d, k_s, n
 
-estimate.plot_image(kd_image, '$k_d$ original', vmin=0, vmax=1)
-estimate.plot_image(kd_image_found, '$k_d$ found', vmin=0, vmax=1)
+# estimate.plot_image(kd_image, '$k_d$ original', vmin=0, vmax=1)
+# estimate.plot_image(kd_image_found, '$k_d$ found', vmin=0, vmax=1)
+#
+# estimate.plot_image(ks_image, '$k_s$ original', vmin=0, vmax=1)
+# estimate.plot_image(ks_image_found, '$k_s$ found', vmin=0, vmax=1)
+#
+# estimate.plot_image(n_image, 'n original', vmin=0, vmax=200)
+# estimate.plot_image(n_image_found, 'n found', vmin=0, vmax=200)
 
-estimate.plot_image(ks_image, '$k_s$ original', vmin=0, vmax=1)
-estimate.plot_image(ks_image_found, '$k_s$ found', vmin=0, vmax=1)
+# Plots with no title
+estimate.plot_image(kd_image, vmin=0, vmax=1)
+estimate.plot_image(kd_image_found, vmin=0, vmax=1)
 
-estimate.plot_image(n_image, 'n original', vmin=0, vmax=200)
-estimate.plot_image(n_image_found, 'n found', vmin=0, vmax=200)
+estimate.plot_image(ks_image, vmin=0, vmax=1)
+estimate.plot_image(ks_image_found, vmin=0, vmax=1)
+
+estimate.plot_image(n_image, vmin=0, vmax=200)
+estimate.plot_image(n_image_found, vmin=0, vmax=200)
 
 # Calculate the RMSD of k_d, k_s, and n
 rmse_kd = np.sum(np.sqrt((kd_image - kd_image_found)**2)) / (424 * 512)
@@ -165,5 +174,7 @@ rmse_n = np.sum(np.sqrt((n_image - n_image_found)**2)) / (424 * 512)
 print 'RMSE k_d',  rmse_kd
 print 'RMSE k_s', rmse_ks
 print 'RMSE n', rmse_n
+
+estimate.plot_image(ir_image)
 
 plt.show()
