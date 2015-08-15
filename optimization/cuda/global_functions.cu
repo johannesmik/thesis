@@ -85,7 +85,10 @@ inline __device__ float intensity_local(LightingModel &lightingmodel, NormalCalc
 ///////////////////////////////////
 
 extern "C"
-__global__ void energy_prime(float *depth_out, float4 *material_out) {
+__global__ void energy_prime(const int lightingmodel_enum, const int normalmodel_enum,
+                             const float depth_variance, const float ir_variance,
+                             const float w_d, const float w_m,
+                             float *depth_out, float4 *material_out) {
 /*
   Calculate the energy prime using the central difference.
 
@@ -107,10 +110,10 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
   // Todo define variance as function input parameter or outside in the numpy function?
   const float h_depth = 0.0001;
   const float h_material = 0.01;
-  const float depth_variance = 0.001;
-  const float ir_variance = 0.001;
-  const float w_d = 1;
-  const float w_m = 50;
+  //const float depth_variance = 0.001;
+  //const float ir_variance = 0.001;
+  //const float w_d = 1;
+  //const float w_m = 50;
 
   float diff_d, diff_kd, diff_ks, diff_n = 0.0;
 
@@ -129,12 +132,26 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
   const float depth_given = tex2D(depth_sensor_tex, x, y);
   float depth_current = 0;
 
-  // TODO let user decide this models at runtime
   PointLight light = PointLight(make_float3(0, 0, 0), 0.0);
   KinectCamera camera = KinectCamera(make_float3(0, 0, 0));
-  SpecularLightingModel lightingmodel = SpecularLightingModel(light, camera);
-  lightingmodel.set_material_properties(tex2D(material_current_tex, x, y));
+
+  LambertianLightingModel lambertianlightingmodel = LambertianLightingModel(light, camera);
+  SpecularLightingModel specularlightingmodel = SpecularLightingModel(light, camera);
+
+  LightingModel *lightingmodel;
+  if (lightingmodel_enum == 0)
+    lightingmodel = &lambertianlightingmodel;
+  else if (lightingmodel_enum == 1)
+    lightingmodel = &specularlightingmodel;
+  lightingmodel->set_material_properties(tex2D(material_current_tex, x, y));
+
+  NormalCalculator *normalmodel;
+  NormalCross normalcross = NormalCross(camera);
   NormalPca normalpca = NormalPca(camera);
+  if (normalmodel_enum == 0)
+    normalmodel = &normalcross;
+  else if (normalmodel_enum == 1)
+    normalmodel = &normalpca;
 
   // Get normals around the current point, with current depth
   float3 normals[3][3] = {make_float3(0, 0, 0)};
@@ -142,7 +159,7 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
     for (int j = 0; j < 3; ++j) {
       float depth_neighborhood[m_depth][m_depth];
       get_current_depth_neighborhood(make_int2(x - 1 + i, y - 1 + j), depth_neighborhood);
-      normals[i][j] = normalpca.normal(depth_neighborhood, make_int2(x - 1 + i, y - 1 + j));
+      normals[i][j] = normalmodel->normal(depth_neighborhood, make_int2(x - 1 + i, y - 1 + j));
     }
   }
 
@@ -153,10 +170,10 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
   // forward difference of depth
   depth_neighborhood[2][2] = depth_neighborhood[2][2] + h_depth;
   depth_current = tex2D(depth_current_tex, x, y) + h_depth;
-  normal = normalpca.normal(depth_neighborhood, make_int2(x, y));
+  normal = normalmodel->normal(depth_neighborhood, make_int2(x, y));
 
   data_term_f = pow(depth_given - depth_current, 2) / depth_variance;
-  ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, depth_current));
+  ir_new = lightingmodel->intensity(normal, pixel_to_camera(x, y, depth_current));
   shading_constraint_f = pow(ir_given - ir_new, 2) / ir_variance;
 
   shape_prior_f = 0;
@@ -168,10 +185,10 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
   // backward difference of depth
   depth_neighborhood[2][2] = depth_neighborhood[2][2] - h_depth;
   depth_current = tex2D(depth_current_tex, x, y) - h_depth;
-  normal = normalpca.normal(depth_neighborhood, make_int2(x, y));
+  normal = normalmodel->normal(depth_neighborhood, make_int2(x, y));
 
   data_term_b = pow(depth_given - depth_current, 2) / depth_variance;
-  ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, depth_current));
+  ir_new = lightingmodel->intensity(normal, pixel_to_camera(x, y, depth_current));
   shading_constraint_b = pow(ir_given - ir_new, 2) / ir_variance;
 
   shape_prior_b = 0;
@@ -190,14 +207,14 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
 
   // Get normals around the current point
   get_current_depth_neighborhood(make_int2(x, y), depth_neighborhood);
-  normal = normalpca.normal(depth_neighborhood, make_int2(x, y));
+  normal = normalmodel->normal(depth_neighborhood, make_int2(x, y));
 
   float4 material_new = make_float4(0, 0, 0, 0);
 
   // forward difference of k_d
   material_new = tex2D(material_current_tex, x, y) + make_float4(0.5 * h_material, 0, 0, 0);
-  lightingmodel.set_material_properties(material_new);
-  ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
+  lightingmodel->set_material_properties(material_new);
+  ir_new = lightingmodel->intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
   shading_constraint_f = pow(ir_given - ir_new, 2) / ir_variance;
 
   material_prior_f = 0;
@@ -208,8 +225,8 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
 
   // backward difference of k_d
   material_new = tex2D(material_current_tex, x, y) - make_float4(0.5 * h_material, 0, 0, 0);
-  lightingmodel.set_material_properties(material_new);
-  ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
+  lightingmodel->set_material_properties(material_new);
+  ir_new = lightingmodel->intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
   shading_constraint_b = pow(ir_given - ir_new, 2) / ir_variance;
 
   material_prior_b = 0;
@@ -223,8 +240,8 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
 
   // forward difference of k_s
   material_new = tex2D(material_current_tex, x, y) + make_float4(0, 0.5 * h_material, 0, 0);
-  lightingmodel.set_material_properties(material_new);
-  ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
+  lightingmodel->set_material_properties(material_new);
+  ir_new = lightingmodel->intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
   shading_constraint_f = pow(ir_given - ir_new, 2) / ir_variance;
 
   material_prior_f = 0;
@@ -235,8 +252,8 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
 
   // backward difference of k_s
   material_new = tex2D(material_current_tex, x, y) - make_float4(0, 0.5 * h_material, 0, 0);
-  lightingmodel.set_material_properties(material_new);
-  ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
+  lightingmodel->set_material_properties(material_new);
+  ir_new = lightingmodel->intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
   shading_constraint_b = pow(ir_given - ir_new, 2) / ir_variance;
 
   material_prior_b = 0;
@@ -250,8 +267,8 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
 
   // forward difference of n
   material_new = tex2D(material_current_tex, x, y) + make_float4(0, 0, 0.5 * h_material, 0);
-  lightingmodel.set_material_properties(material_new);
-  ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
+  lightingmodel->set_material_properties(material_new);
+  ir_new = lightingmodel->intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
   shading_constraint_f = pow(ir_given - ir_new, 2) / ir_variance;
 
   material_prior_f = 0;
@@ -262,8 +279,8 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
 
   // backward difference of n
   material_new = tex2D(material_current_tex, x, y) - make_float4(0, 0, 0.5 * h_material, 0);
-  lightingmodel.set_material_properties(material_new);
-  ir_new = lightingmodel.intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
+  lightingmodel->set_material_properties(material_new);
+  ir_new = lightingmodel->intensity(normal, pixel_to_camera(x, y, tex2D(depth_sensor_tex, x, y)));
   shading_constraint_b = pow(ir_given - ir_new, 2) / ir_variance;
 
   material_prior_b = 0;
@@ -284,7 +301,10 @@ __global__ void energy_prime(float *depth_out, float4 *material_out) {
 }
 
 extern "C"
-__global__ void energy(float *energy_data_term, float *energy_shading_constraint,
+__global__ void energy(const int lightingmodel_enum, const int normalmodel_enum,
+                        const float depth_variance, const float ir_variance,
+                        const float w_d, const float w_m,
+                       float *energy_data_term, float *energy_shading_constraint,
                        float *energy_shape_prior, float *energy_material_prior)
 /*
   Calculates the energy per pixel.
@@ -307,10 +327,10 @@ __global__ void energy(float *energy_data_term, float *energy_shading_constraint
   */
 
   // TODO define variance as input parameters or outside in the numpy function?
-  const float depth_variance = 0.001;
-  const float ir_variance = 0.001;
-  const float w_d = 1;
-  const float w_m = 50;
+  //const float depth_variance = 0.001;
+  //const float ir_variance = 0.001;
+  //const float w_d = 1;
+  //const float w_m = 50;
 
   // Indexing
   const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -318,12 +338,25 @@ __global__ void energy(float *energy_data_term, float *energy_shading_constraint
   const int elementPitch = blockDim.x * gridDim.x;
   const int index = y * elementPitch + x;
 
-  // TODO let user choose those models at runtime
   PointLight light = PointLight(make_float3(0, 0, 0), 0.0);
   KinectCamera camera = KinectCamera(make_float3(0, 0, 0));
-  SpecularLightingModel lightingmodel = SpecularLightingModel(light, camera);
-  lightingmodel.set_material_properties(tex2D(material_current_tex, x, y));
+
+  LambertianLightingModel lambertianlightingmodel = LambertianLightingModel(light, camera);
+  SpecularLightingModel specularlightingmodel = SpecularLightingModel(light, camera);
+  LightingModel *lightingmodel;
+  if (lightingmodel_enum == 0)
+    lightingmodel = &lambertianlightingmodel;
+  else if (lightingmodel_enum == 1)
+    lightingmodel = &specularlightingmodel;
+  lightingmodel->set_material_properties(tex2D(material_current_tex, x, y));
+
+  NormalCalculator *normalmodel;
+  NormalCross normalcross = NormalCross(camera);
   NormalPca normalpca = NormalPca(camera);
+  if (normalmodel_enum == 0)
+    normalmodel = &normalcross;
+  else if (normalmodel_enum == 1)
+    normalmodel = &normalpca;
 
   // Get normals around the current point
   float3 normals[3][3] = {make_float3(0, 0, 0)};
@@ -331,7 +364,7 @@ __global__ void energy(float *energy_data_term, float *energy_shading_constraint
     for (int j = 0; j < 3; ++j) {
       float depth_neighborhood[m_depth][m_depth];
       get_current_depth_neighborhood(make_int2(x - 1 + i, y - 1 + j), depth_neighborhood);
-      normals[i][j] = normalpca.normal(depth_neighborhood, make_int2(x - 1 + i, y - 1 + j));
+      normals[i][j] = normalmodel->normal(depth_neighborhood, make_int2(x - 1 + i, y - 1 + j));
     }
   }
   // The normal in the mid
@@ -344,7 +377,7 @@ __global__ void energy(float *energy_data_term, float *energy_shading_constraint
 
   // Shading Constraint
   float ir_given = tex2D(ir_sensor_tex, x, y);
-  float ir_new = lightingmodel.intensity(normal, pixel_to_camera(camera, x, y, tex2D(depth_sensor_tex, x, y)));
+  float ir_new = lightingmodel->intensity(normal, pixel_to_camera(camera, x, y, tex2D(depth_sensor_tex, x, y)));
   energy_shading_constraint[index] = pow(ir_given - ir_new, 2) / ir_variance;
 
   // Shape Prior
@@ -368,7 +401,7 @@ __global__ void energy(float *energy_data_term, float *energy_shading_constraint
 }
 
 extern "C"
-__global__ void intensity_image(float *intensity_out)
+__global__ void intensity_image(int lightingmodel_enum, int normalmodel_enum, float *intensity_out)
 /* Returns the infrared intensity image */
 {
   // Indexing
@@ -383,16 +416,29 @@ __global__ void intensity_image(float *intensity_out)
   const float3 light_pos = make_float3(0, 0, 0);
   const float light_falloff = 0;
   PointLight light = PointLight(light_pos, light_falloff);
-  NormalPca normalpca = NormalPca(camera);;
-  //LambertianLightingModel lightingmodel = LambertianLightingModel(light, camera);
-  SpecularLightingModel lightingmodel = SpecularLightingModel(light, camera);
-  lightingmodel.set_material_properties(tex2D(material_current_tex, x, y));
+
+  NormalCalculator *normalmodel;
+  NormalCross normalcross = NormalCross(camera);
+  NormalPca normalpca = NormalPca(camera);
+  if (normalmodel_enum == 0)
+    normalmodel = &normalcross;
+  else if (normalmodel_enum == 1)
+    normalmodel = &normalpca;
+
+  LambertianLightingModel lambertianlightingmodel = LambertianLightingModel(light, camera);
+  SpecularLightingModel specularlightingmodel = SpecularLightingModel(light, camera);
+  LightingModel *lightingmodel;
+  if (lightingmodel_enum == 0)
+    lightingmodel = & lambertianlightingmodel;
+  else if (lightingmodel_enum == 1)
+    lightingmodel = & specularlightingmodel;
+  lightingmodel->set_material_properties(tex2D(material_current_tex, x, y));
 
   float depth_neighborhood[m_depth][m_depth];
   get_current_depth_neighborhood(make_int2(x, y), depth_neighborhood);
-  float3 normal = normalpca.normal(depth_neighborhood, make_int2(x, y));
+  float3 normal = normalmodel->normal(depth_neighborhood, make_int2(x, y));
 
-  const float ir_new = lightingmodel.intensity(normal, pixel_to_camera(camera, x, y, tex2D(depth_sensor_tex, x, y)));
+  const float ir_new = lightingmodel->intensity(normal, pixel_to_camera(camera, x, y, tex2D(depth_sensor_tex, x, y)));
 
   intensity_out[index] = ir_new;
 }

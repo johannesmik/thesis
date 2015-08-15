@@ -1,8 +1,5 @@
 from __future__ import print_function
 
-# Todo Refactor this, especially the function names and arguments to make sense, otherwise it's a mess to debug
-# FIXME
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,7 +25,8 @@ mod = SourceModule("""
 
 class Optimizer(object):
 
-    def __init__(self, depth_sensor_image, ir_sensor_image):
+    def __init__(self, depth_sensor_image, ir_sensor_image, lightingmodel='diffuse', normalmodel='pca',
+                 depth_variance=0.001, ir_variance=0.001, w_d=1, w_m=50):
 
         self.eps = 0.0001
         self.max_iterations = 20
@@ -38,6 +36,19 @@ class Optimizer(object):
         # Counter for debug reasons
         # Todo Delete at sometime :)
         self.debug_counter = 0
+
+        # Setup Lighting model
+        lightingmodels = {'diffuse': 0, 'specular' : 1}
+        self.lightingmodel = lightingmodels[lightingmodel]
+
+        # Setup normalmodel
+        normalmodels = {'cross': 0, 'pca' : 1}
+        self.normalmodel = normalmodels[normalmodel]
+
+        self.depth_variance = depth_variance
+        self.ir_variance = ir_variance
+        self.w_d = w_d
+        self.w_m = w_m
 
         # Setup CUDA functions
         self.energy_function = mod.get_function("energy")
@@ -116,7 +127,11 @@ class Optimizer(object):
         energy_shape_prior = np.zeros(self.shape, dtype=np.float32)
         energy_material_prior = np.zeros(self.shape, dtype=np.float32)
 
+
         self.energy_function(
+             np.int32(self.lightingmodel), np.int32(self.normalmodel),
+             np.float32(self.depth_variance), np.float32(self.ir_variance),
+             np.float32(self.w_d), np.float32(self.w_m),
              drv.Out(energy_data_term), drv.Out(energy_shading_constraint),
              drv.Out(energy_shape_prior), drv.Out(energy_material_prior),
              block=(16, 8, 1), grid=(32, 53))
@@ -145,6 +160,8 @@ class Optimizer(object):
         ir = np.zeros(self.shape, dtype=np.float32)
 
         self.ir_function(
+              np.int32(self.lightingmodel),
+              np.int32(self.normalmodel),
               drv.Out(ir),
               block=(16, 8, 1), grid=(32, 53))
 
@@ -156,6 +173,9 @@ class Optimizer(object):
         depth_prime = np.zeros(self.shape, dtype=np.float32)
         material_prime = np.zeros((self.shape[0], self.shape[1], 4), dtype=np.float32)
         self.energy_prime_function(
+               np.int32(self.lightingmodel), np.int32(self.normalmodel),
+               np.float32(self.depth_variance), np.float32(self.ir_variance),
+               np.float32(self.w_d), np.float32(self.w_m),
                drv.Out(depth_prime), drv.Out(material_prime),
                block=(16, 8, 1), grid=(32, 53))
 
@@ -192,7 +212,6 @@ class Optimizer(object):
         utils.show_image(material_image_start[:,:,1], 'start material $k_s$ image')
         utils.show_image(material_image_start[:,:,2], 'start material $n$ image')
 
-
         # Optimal (found) Depth and Material image
         depth_image_opt = self.reshape_flat(xopt[:(512*424)])
         material_image_opt = self.reshape_flat(xopt[(512*424):])
@@ -220,17 +239,20 @@ class Optimizer(object):
         if len(energy_log) > 0:
 
             plt.figure()
-            plt.title('0')
+            plt.title('Data term')
             plt.plot(energy_log[:,0])
             plt.figure()
-            plt.title('1')
+            plt.title('Shading constraint term')
             plt.plot(energy_log[:,1])
             plt.figure()
-            plt.title('2')
+            plt.title('Shape prior term')
             plt.plot(energy_log[:,2])
             plt.figure()
-            plt.title('3')
+            plt.title('Material prior term')
             plt.plot(energy_log[:,3])
+            plt.figure()
+            plt.title('Total energy')
+            plt.plot(energy_log[:,0] + energy_log[:,1] + energy_log[:,2] + energy_log[:,3])
 
         return 0
 
@@ -251,6 +273,8 @@ class Optimizer(object):
         ir = np.zeros(self.shape, dtype=np.float32)
 
         self.ir_function(
+              np.int32(self.lightingmodel),
+              np.int32(self.normalmodel),
               drv.Out(ir),
               block=(16, 8, 1), grid=(32, 53))
 
@@ -281,37 +305,3 @@ class Optimizer(object):
         self.material_current_arr = drv.make_multichannel_2d_array(self.material_current, 'C')
         self.material_current_tex.set_array(self.material_current_arr)
 
-
-path = '../assets/clustering'
-scenename= 'MonkeySuzanne'
-
-
-depth_sensor_image = Image.open('%s/%s_depth.tiff' % (path, scenename))
-depth_sensor_image = np.asarray(depth_sensor_image, dtype=np.float32) * 4.5
-
-mu, sigma = 0, 0.003
-depth_sensor_image_noise = depth_sensor_image + sigma * np.random.randn(*depth_sensor_image.shape) + mu
-depth_sensor_image_noise = depth_sensor_image_noise.astype(np.float32)
-
-mu, sigma = 0, 0.003
-depth_sensor_image_noise2 = depth_sensor_image + sigma * np.random.randn(*depth_sensor_image.shape) + mu
-depth_sensor_image_noise2 = depth_sensor_image_noise2.astype(np.float32)
-
-ir_sensor_image = Image.open('%s/%s_ir.tiff' % (path, scenename))
-ir_sensor_image = np.asarray(ir_sensor_image, dtype=np.float32)
-
-mu, sigma = 0, 0.01
-ir_sensor_image_noise = ir_sensor_image + sigma * np.random.randn(*ir_sensor_image.shape) + mu
-ir_sensor_image_noise = ir_sensor_image_noise.astype(np.float32)
-
-optimizer = Optimizer(depth_sensor_image_noise, ir_sensor_image_noise)
-
-k_d = np.asarray(Image.open('%s/%s_kd.tiff' % (path, scenename)), dtype=np.float32)
-k_s = np.asarray(Image.open('%s/%s_ks.tiff' % (path, scenename)), dtype=np.float32)
-n = np.asarray(Image.open('%s/%s_n.tiff' % (path, scenename)), dtype=np.float32)
-margin = np.zeros((424, 512), dtype=np.float32)
-material_image = np.dstack((k_d, k_s, n, margin))
-
-optimizer.optimize(depth_sensor_image_noise2, material_image)
-
-plt.show()
