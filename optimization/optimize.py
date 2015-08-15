@@ -96,7 +96,7 @@ class Optimizer(object):
         self.material_current_arr = drv.make_multichannel_2d_array(self.material_current, 'C')
         self.material_current_tex.set_array(self.material_current_arr)
 
-        self.energy_log = []
+        self.energy_log_ = []
 
     def add_noise(self, image, mu=0.0, sigma=0.0):
         image = image + sigma * np.random.randn(*image.shape).astype(np.float32) + mu
@@ -104,7 +104,7 @@ class Optimizer(object):
     def callback(self, xk):
         dt, sc, sp, mp = self.energy(xk, return_terms=True)
         self.iteration_counter += 1
-        self.energy_log.append([dt, sc, sp, mp])
+        self.energy_log_.append([dt, sc, sp, mp])
         print('callback', self.iteration_counter)
         print('energy data sc sp mp', dt, sc, sp, mp)
 
@@ -190,6 +190,7 @@ class Optimizer(object):
         ' Calls fmin_cg '
 
         self.iteration_counter = 0
+        self.energy_log_ = []
 
         xstart = np.concatenate((depth_image_start.flatten(), material_image_start.flatten()))
         self.callback(xstart)
@@ -202,40 +203,45 @@ class Optimizer(object):
                                                                         callback=self.callback,
                                                                         full_output=True)
 
+        self.depth_image_start_ = depth_image_start
+        self.material_image_start_ = material_image_start
+        self.depth_image_opt_ = self.reshape_flat(xopt[:(512*424)])
+        self.material_image_opt_ = self.reshape_flat(xopt[(512*424):])
+
+    def plot_results(self):
+        pass
+
         # Sensor images
         utils.show_image(self.ir_sensor_image, 'ir sensor image')
         utils.show_image(self.depth_sensor_image, 'depth sensor image')
 
         # Start images
-        utils.show_image(depth_image_start, 'start depth image')
-        utils.show_image(material_image_start[:,:,0], 'start material $k_d$ image')
-        utils.show_image(material_image_start[:,:,1], 'start material $k_s$ image')
-        utils.show_image(material_image_start[:,:,2], 'start material $n$ image')
+        utils.show_image(self.depth_image_start_, 'start depth image')
+        utils.show_image(self.material_image_start_[:,:,0], 'start material $k_d$ image')
+        utils.show_image(self.material_image_start_[:,:,1], 'start material $k_s$ image')
+        utils.show_image(self.material_image_start_[:,:,2], 'start material $n$ image')
 
         # Optimal (found) Depth and Material image
-        depth_image_opt = self.reshape_flat(xopt[:(512*424)])
-        material_image_opt = self.reshape_flat(xopt[(512*424):])
-
-        utils.show_image(depth_image_opt, 'depth image found optimum')
-        utils.show_image(material_image_opt[:,:,0], 'material $k_d$ found optimum')
-        utils.show_image(material_image_opt[:,:,1], 'material $k_s$ found optimum')
-        utils.show_image(material_image_opt[:,:,2], 'material $n$ found optimum')
+        utils.show_image(self.depth_image_opt_, 'depth image found optimum')
+        utils.show_image(self.material_image_opt_[:,:,0], 'material $k_d$ found optimum')
+        utils.show_image(self.material_image_opt_[:,:,1], 'material $k_s$ found optimum')
+        utils.show_image(self.material_image_opt_[:,:,2], 'material $n$ found optimum')
 
         # Infrared images
-        ir_start = self.relight_depth(depth_image_start, material_image_start)
+        ir_start = self.relight_depth(self.depth_image_start_, self.material_image_start_)
         utils.show_image(ir_start, 'ir start')
 
-        ir_end = self.relight_depth(depth_image_opt, material_image_opt)
+        ir_end = self.relight_depth(self.depth_image_opt_, self.material_image_opt_)
         utils.show_image(ir_end, 'ir end')
 
         # Normal images
-        normal_start = self.calculate_normal(depth_image_start)
+        normal_start = self.calculate_normal(self.depth_image_start_)
         utils.show_image(normal_start, 'normal start')
 
-        normal_end = self.calculate_normal(depth_image_opt)
+        normal_end = self.calculate_normal(self.depth_image_opt_)
         utils.show_image(normal_end, 'normal end (found opt)')
 
-        energy_log = np.array(self.energy_log)
+        energy_log = np.array(self.energy_log_)
         if len(energy_log) > 0:
 
             plt.figure()

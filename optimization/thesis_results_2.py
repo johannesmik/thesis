@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 import optimize
+import utils
 
 path = '../assets/clustering'
 scenename= 'MonkeySuzanne'
@@ -49,6 +50,15 @@ material_image = np.dstack((k_d, k_s, n, margin))
 
 optimizer = optimize.Optimizer(depth_sensor_image_noise, ir_sensor_image_noise, lightingmodel='specular')
 optimizer.optimize(depth_sensor_image_noise2, material_image)
+
+optimizer.plot_results()
+
+# Save depth start and depth end
+utils.save_bw_image(optimizer.depth_image_start_, 'depth_start.tiff')
+utils.save_bw_image(optimizer.depth_image_opt_, 'depth_opt.tiff')
+
+utils.show_image(depth_sensor_image - optimizer.depth_image_start_, 'depth difference start')
+utils.show_image(depth_sensor_image - optimizer.depth_image_opt_, 'depth difference opt')
 
 plt.show()
 

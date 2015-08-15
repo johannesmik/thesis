@@ -1,6 +1,7 @@
 from __future__ import print_function
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from PIL import Image
 
 import pycuda.driver as drv
 
@@ -36,6 +37,11 @@ def show_image(image, title=None, colorbar=True):
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size=0.15, pad=0.05)
         clb = plt.colorbar(im, cax)
+
+def save_bw_image(image, filename):
+    image = Image.fromarray(image, mode='F')
+    with open(filename, 'w') as f:
+        image.save(f)
 
 def set_texture_border_mode(texture, mode='clamp'):
     """
