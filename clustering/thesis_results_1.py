@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 import estimate
 
-scene = 'Monkey'
+scene = 'MonkeySuzanne'
 
 if scene == 'ThreeSpheres':
     color_image = Image.open("../assets/clustering/ThreeSpheres_color.tiff")
@@ -68,7 +68,7 @@ elif scene == 'SpecularSphere':
     n_image = Image.open("../assets/clustering/SpecularSphere_n.tiff")
     n_image = np.asarray(n_image, dtype=np.float32)
 
-elif scene == 'Monkey':
+elif scene == 'MonkeySuzanne':
     color_image = Image.open("../assets/clustering/MonkeySuzanne_color.tiff")
     color_image = np.asarray(color_image, dtype=np.float32)
     depth_image = Image.open("../assets/clustering/MonkeySuzanne_depth.tiff")
@@ -165,6 +165,15 @@ estimate.plot_image(ks_image_found, vmin=0, vmax=1)
 
 estimate.plot_image(n_image, vmin=0, vmax=200)
 estimate.plot_image(n_image_found, vmin=0, vmax=200)
+
+# Save images
+images = [kd_image_found, ks_image_found, n_image_found]
+names = ['kd', 'ks', 'n']
+for image, name in zip(images, names):
+    image = image.astype(np.float32)
+    img = Image.fromarray(image, mode='F')
+    with open('../assets/clustering/results/%s_%s.tiff' % (scene, name), 'w') as f:
+        img.save(f)
 
 # Calculate the RMSD of k_d, k_s, and n
 rmse_kd = np.sum(np.sqrt((kd_image - kd_image_found)**2)) / (424 * 512)
