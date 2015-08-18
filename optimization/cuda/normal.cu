@@ -52,8 +52,8 @@ class NormalPca : public NormalCalculator {
 
 public:
   __device__ NormalPca() {}
-  __device__ NormalPca(Camera &camera)
-   : m_camera(&camera) { }
+  __device__ NormalPca(Camera &camera, const float radius=5.25)
+   : m_camera(&camera), m_radius(radius) { }
   __device__ float3 normal(const float depth_neighborhood[m_depth][m_depth], const int2 pos)
   {
     /*
@@ -84,8 +84,7 @@ public:
     avg_dist /= points_n;
     //const float radius = avg_dist * 2;
 
-    // TODO let user set this at runtime
-    const float radius = 0.08;
+    const float radius = m_radius;
 
     // Calculate the average point location
     float3 avg = {0};
@@ -132,6 +131,7 @@ public:
   }
 private:
   Camera *m_camera;
+  float m_radius;
 };
 
 #endif
