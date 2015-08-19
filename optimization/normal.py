@@ -22,7 +22,7 @@ mod = SourceModule("""
 
 normal_function = mod.get_function("normal_pca")
 
-use_testimage = True
+use_testimage = False
 if use_testimage:
     depth_image = Image.open("../assets/optimization/testimage.tiff")
     depth_image = Image.open("../assets/clustering/SpecularSphere_depth.tiff")
@@ -53,6 +53,7 @@ intensity_change = np.zeros_like(depth_image)
 
 for i in range(10):
     normal_function(
+    np.float32(0.05),
     drv.Out(normal),
     block=(16, 8, 1), grid=(32, 53))
 
