@@ -26,15 +26,14 @@ mod = SourceModule("""
 class Optimizer(object):
 
     def __init__(self, depth_sensor_image, ir_sensor_image, lightingmodel='diffuse', normalmodel='pca',
-                 depth_variance=0.001, ir_variance=0.001, w_d=1, w_m=50):
+                 depth_variance=0.001, ir_variance=0.001, w_d=1, w_m=50, max_iterations=50, pca_radius=5.00):
 
         self.eps = 0.0001
-        self.max_iterations = 20
+        self.max_iterations = max_iterations
 
         self.iteration_counter = 0
 
         # Counter for debug reasons
-        # Todo Delete at sometime :)
         self.debug_counter = 0
 
         # Setup Lighting model
@@ -49,6 +48,7 @@ class Optimizer(object):
         self.ir_variance = ir_variance
         self.w_d = w_d
         self.w_m = w_m
+        self.pca_radius = pca_radius
 
         # Setup CUDA functions
         self.energy_function = mod.get_function("energy")
@@ -132,12 +132,12 @@ class Optimizer(object):
              np.int32(self.lightingmodel), np.int32(self.normalmodel),
              np.float32(self.depth_variance), np.float32(self.ir_variance),
              np.float32(self.w_d), np.float32(self.w_m),
+             np.float32(self.pca_radius),
              drv.Out(energy_data_term), drv.Out(energy_shading_constraint),
              drv.Out(energy_shape_prior), drv.Out(energy_material_prior),
              block=(16, 8, 1), grid=(32, 53))
 
         energy_total = np.sum(energy_data_term + energy_shading_constraint + energy_shape_prior + energy_material_prior)
-        #utils.show_image(energy_out, title='energy out')
 
         if return_terms:
             return [np.sum(energy_data_term),
@@ -156,19 +156,18 @@ class Optimizer(object):
         self.set_current_depth(depth_image)
         self.set_current_material(material_image)
 
-        # TODO: do i really need to update the IR here?
         ir = np.zeros(self.shape, dtype=np.float32)
 
         self.ir_function(
               np.int32(self.lightingmodel),
               np.int32(self.normalmodel),
+              np.float32(self.pca_radius),
               drv.Out(ir),
               block=(16, 8, 1), grid=(32, 53))
 
         # Update IR current
         ir_arr = drv.matrix_to_array(ir, 'C')
         self.ir_current_tex.set_array(ir_arr)
-        # TODO end
 
         depth_prime = np.zeros(self.shape, dtype=np.float32)
         material_prime = np.zeros((self.shape[0], self.shape[1], 4), dtype=np.float32)
@@ -176,10 +175,9 @@ class Optimizer(object):
                np.int32(self.lightingmodel), np.int32(self.normalmodel),
                np.float32(self.depth_variance), np.float32(self.ir_variance),
                np.float32(self.w_d), np.float32(self.w_m),
+               np.float32(self.pca_radius),
                drv.Out(depth_prime), drv.Out(material_prime),
                block=(16, 8, 1), grid=(32, 53))
-
-        energy_prime = depth_prime / 100
 
         #print ('depth_prime, min/max', depth_prime.min(), depth_prime.max())
         #print ('material_prime, min/max', material_prime.min(), material_prime.max())
@@ -212,55 +210,85 @@ class Optimizer(object):
         pass
 
         # Sensor images
-        utils.show_image(self.ir_sensor_image, 'ir sensor image')
-        utils.show_image(self.depth_sensor_image, 'depth sensor image')
+        utils.show_image(self.ir_sensor_image, 'observed infrared image $\mathcal{I}^O$')
+        utils.show_image(self.depth_sensor_image, 'observed depth image $\mathcal{D}^O$')
 
         # Start images
-        utils.show_image(self.depth_image_start_, 'start depth image')
-        utils.show_image(self.material_image_start_[:,:,0], 'start material $k_d$ image')
-        utils.show_image(self.material_image_start_[:,:,1], 'start material $k_s$ image')
-        utils.show_image(self.material_image_start_[:,:,2], 'start material $n$ image')
+        utils.show_image(self.depth_image_start_, 'initial depth image $\mathcal{D}_0$')
+        utils.show_image(self.material_image_start_[:,:,0], 'inital $k_d$')
+        utils.show_image(self.material_image_start_[:,:,1], 'initial $k_s$')
+        utils.show_image(self.material_image_start_[:,:,2], 'initial $n$')
 
         # Optimal (found) Depth and Material image
-        utils.show_image(self.depth_image_opt_, 'depth image found optimum')
-        utils.show_image(self.material_image_opt_[:,:,0], 'material $k_d$ found optimum')
-        utils.show_image(self.material_image_opt_[:,:,1], 'material $k_s$ found optimum')
-        utils.show_image(self.material_image_opt_[:,:,2], 'material $n$ found optimum')
+        utils.show_image(self.depth_image_opt_, r'found optimum $\hat{\mathcal{D}}$')
+        utils.show_image(self.material_image_opt_[:,:,0], r'found optimum $\hat{k}_{d}$')
+        utils.show_image(self.material_image_opt_[:,:,1], r'found optimum $\hat{k}_{s}$')
+        utils.show_image(self.material_image_opt_[:,:,2], r'found optimum $\hat{n}$')
 
         # Infrared images
         ir_start = self.relight_depth(self.depth_image_start_, self.material_image_start_)
-        utils.show_image(ir_start, 'ir start')
+        utils.show_image(ir_start, r'initial infrared $I(\mathcal{D}_0, \mathcal{M}_0)$')
 
         ir_end = self.relight_depth(self.depth_image_opt_, self.material_image_opt_)
-        utils.show_image(ir_end, 'ir end')
+        utils.show_image(ir_end, r'found optimum infrared $I(\hat{\mathcal{D}}_0, \hat{\mathcal{M}}_0)$')
 
         # Normal images
         normal_start = self.calculate_normal(self.depth_image_start_)
-        utils.show_image(normal_start, 'normal start')
+        utils.show_image(normal_start, 'normal start', colorbar=False)
 
         normal_end = self.calculate_normal(self.depth_image_opt_)
-        utils.show_image(normal_end, 'normal end (found opt)')
+        utils.show_image(normal_end, 'normal end (found opt)', colorbar=False)
 
         energy_log = np.array(self.energy_log_)
         if len(energy_log) > 0:
 
+            # All in one plot
             plt.figure()
-            plt.title('Data term')
-            plt.plot(energy_log[:,0])
-            plt.figure()
-            plt.title('Shading constraint term')
-            plt.plot(energy_log[:,1])
-            plt.figure()
-            plt.title('Shape prior term')
-            plt.plot(energy_log[:,2])
-            plt.figure()
-            plt.title('Material prior term')
-            plt.plot(energy_log[:,3])
-            plt.figure()
-            plt.title('Total energy')
-            plt.plot(energy_log[:,0] + energy_log[:,1] + energy_log[:,2] + energy_log[:,3])
+            plt.semilogy(energy_log[:,0] + energy_log[:,1] + energy_log[:,2] + energy_log[:,3], color='c', label='total energy')
+            plt.semilogy(energy_log[:,0], label='Data term')
+            plt.semilogy(energy_log[:,1], label='Shading constraint term')
+            plt.semilogy(energy_log[:,2], label='Smooth shape term')
+            plt.semilogy(energy_log[:,3], label='Smooth material term')
+            plt.legend()
+
+            fig, axes = plt.subplots(ncols=5, figsize=(18, 3), dpi=150, facecolor='w', edgecolor='k')
+            titles = ['data', 'shading', 'shape', 'material', 'total']
+            for i in range(5):
+                if i == 4:
+                    axes[i].plot(energy_log[:,0] + energy_log[:,1] + energy_log[:,2] + energy_log[:,3])
+                else:
+                    axes[i].plot(energy_log[:,i])
+                axes[i].ticklabel_format(style='sci',scilimits=(-3,3),axis='both')
+                t = axes[i].yaxis.get_offset_text()
+                t.set_size(14)
+                ticks = axes[i].get_xticks()
+                axes[i].set_xticks([ticks[0], ticks[len(ticks)/2], ticks[-1]])
+                axes[i].set_xlabel(titles[i], fontsize=18)
+                axes[i].spines['top'].set_visible(False)
+                axes[i].spines['right'].set_visible(False)
+                axes[i].get_xaxis().tick_bottom()
+                axes[i].get_yaxis().tick_left()
+            fig.tight_layout(w_pad=2.5)
+            plt.subplots_adjust(left=0.04, bottom=0.18, right=0.98, top=0.92, wspace=None, hspace=None)
 
         return 0
+
+    def print_results(self):
+
+        energy_log = np.array(self.energy_log_)
+        total_energy = energy_log[:,0] + energy_log[:,1] + energy_log[:,2] + energy_log[:,3]
+        if len(energy_log) > 0:
+            print('\t\t\t Start \t\t Stop \t\t improv')
+            print('Data term\t %f \t %f \t %f' %
+                  (energy_log[0,0], energy_log[-1,0], 1 - (energy_log[-1,0] / energy_log[0,0])))
+            print('SC term \t %f \t %f \t %f' %
+                  (energy_log[0,1], energy_log[-1,1], 1 - (energy_log[-1,1] / energy_log[0,1])))
+            print('SP term \t %f \t %f \t %f' %
+                  (energy_log[0,2], energy_log[-1,2], 1 - (energy_log[-1,2] / energy_log[0,2])))
+            print('MP term \t %f \t %f \t %f' %
+                  (energy_log[0,3], energy_log[-1,3], 1 - (energy_log[-1,3] / energy_log[0,3])))
+            print('Total energy\t %f \t %f \t %f' %
+                  (total_energy[0], total_energy[-1], 1 - (total_energy[-1] / total_energy[0])))
 
     def reshape_flat(self, img_flat):
         # Reshapes flat image into array of right dimensions
@@ -281,6 +309,7 @@ class Optimizer(object):
         self.ir_function(
               np.int32(self.lightingmodel),
               np.int32(self.normalmodel),
+              np.float32(self.pca_radius),
               drv.Out(ir),
               block=(16, 8, 1), grid=(32, 53))
 
@@ -293,6 +322,7 @@ class Optimizer(object):
         normal = np.zeros((424, 512, 3), dtype=np.float32)
 
         self.normal_function(
+            np.float32(self.pca_radius),
             drv.Out(normal),
             block=(16, 8, 1), grid=(32, 53))
 
