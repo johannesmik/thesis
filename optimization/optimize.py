@@ -206,6 +206,9 @@ class Optimizer(object):
         self.depth_image_opt_ = self.reshape_flat(xopt[:(512*424)])
         self.material_image_opt_ = self.reshape_flat(xopt[(512*424):])
 
+        self.ir_image_start_ = self.relight_depth(self.depth_image_start_, self.material_image_start_)
+        self.ir_image_opt_ = self.relight_depth(self.depth_image_opt_, self.material_image_opt_)
+
     def plot_results(self):
         pass
 
@@ -230,7 +233,7 @@ class Optimizer(object):
         utils.show_image(ir_start, r'initial infrared $I(\mathcal{D}_0, \mathcal{M}_0)$')
 
         ir_end = self.relight_depth(self.depth_image_opt_, self.material_image_opt_)
-        utils.show_image(ir_end, r'found optimum infrared $I(\hat{\mathcal{D}}_0, \hat{\mathcal{M}}_0)$')
+        utils.show_image(ir_end, r'found optimum infrared $I(\hat{\mathcal{D}}, \hat{\mathcal{M}})$')
 
         # Normal images
         normal_start = self.calculate_normal(self.depth_image_start_)
