@@ -74,16 +74,6 @@ public:
     if (center.z == 0)
        return make_float3(0, 0, 0);
 
-    // Search radius depends on Z
-    //const float radius = 15. / 368. * -center.z;
-
-    // Search radius depends on the mean distance of all points
-    float avg_dist = 0;
-    for (int i = 0; i < points_n; ++i)
-      avg_dist += dist(world_points[i], center);
-    avg_dist /= points_n;
-    //const float radius = avg_dist * 2;
-
     const float radius = m_radius;
 
     // Calculate the average point location
