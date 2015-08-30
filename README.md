@@ -1,4 +1,6 @@
-Source code for my master's thesis (2015).
+Source code for my master's thesis in Computer Science (August 2015)
+
+"Structure and Material Optimization Using a ToF Depth Camera"
 
 In this repository there are six directories:
 
